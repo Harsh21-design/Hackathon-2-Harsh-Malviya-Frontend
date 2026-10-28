@@ -16,11 +16,12 @@ import {
   Sparkles,
   ArrowLeft,
   Check,
-  UserCheck,
-  Lock
+  Edit2,
+  AlertTriangle,
+  UserCheck
 } from "lucide-react";
 
-export type ViewMode = "dashboard" | "invoice" | "review" | "verify";
+export type ViewMode = "dashboard" | "invoices" | "verification" | "invoice_detail" | "review_draft";
 
 export interface Invoice {
   id: string;
@@ -29,95 +30,81 @@ export interface Invoice {
   clientEmail: string;
   amount: number;
   currency: string;
+  invoiceDate: string;
   dueDate: string;
   daysOverdue: number;
-  remindersUsed: number; // 0, 1, 2, 3
-  remindersMax: number;
-  status: "OVERDUE" | "PROMISED" | "CLAIMED_PAID" | "RECOVERED";
-  r1SentDate?: string;
-  r2SentDate?: string;
-  r3SentDate?: string;
-  clientReply?: {
-    date: string;
-    text: string;
-    aiIntent: "PAYMENT_PROMISE" | "CLAIMED_PAID" | "GENERAL";
-    promisedDate?: string;
-  };
+  status: "Overdue" | "Pending" | "Paid";
+  reminder1: boolean;
+  reminder2: boolean;
+  reminder3: boolean;
+  paymentVerified: boolean;
+  verifiedAt?: string;
 }
 
 const INITIAL_INVOICES: Invoice[] = [
   {
-    id: "inv-101",
-    invoiceNumber: "INV-101",
-    clientName: "Rahul Sharma",
-    clientEmail: "rahul@sharmamedia.in",
-    amount: 50000,
-    currency: "INR",
-    dueDate: "2026-10-10",
-    daysOverdue: 18,
-    remindersUsed: 1,
-    remindersMax: 3,
-    status: "OVERDUE",
-    r1SentDate: "12 Oct, 10:14 AM",
-    clientReply: {
-      date: "13 Oct, 09:02 AM",
-      text: "Okay, I will make the payment in five days.",
-      aiIntent: "PAYMENT_PROMISE",
-      promisedDate: "18 Oct",
-    },
+    id: "inv-103",
+    invoiceNumber: "INV-103",
+    clientName: "Riley Johnson",
+    clientEmail: "harshmal82260@gmail.com",
+    amount: 2900,
+    currency: "USD",
+    invoiceDate: "01-10-2026",
+    dueDate: "22-10-2026",
+    daysOverdue: 6,
+    status: "Overdue",
+    reminder1: true,
+    reminder2: false,
+    reminder3: false,
+    paymentVerified: false,
+  },
+  {
+    id: "inv-105",
+    invoiceNumber: "INV-105",
+    clientName: "Jamie Brown",
+    clientEmail: "harsh.malviya@vkaps.com",
+    amount: 4400,
+    currency: "USD",
+    invoiceDate: "25-09-2026",
+    dueDate: "15-10-2026",
+    daysOverdue: 13,
+    status: "Overdue",
+    reminder1: true,
+    reminder2: true,
+    reminder3: false,
+    paymentVerified: false,
+  },
+  {
+    id: "inv-108",
+    invoiceNumber: "INV-108",
+    clientName: "Avery Taylor",
+    clientEmail: "malviyaharsh500@gmail.com",
+    amount: 2500,
+    currency: "USD",
+    invoiceDate: "05-10-2026",
+    dueDate: "20-10-2026",
+    daysOverdue: 8,
+    status: "Overdue",
+    reminder1: true,
+    reminder2: false,
+    reminder3: false,
+    paymentVerified: false,
   },
   {
     id: "inv-102",
     invoiceNumber: "INV-102",
-    clientName: "ABC Agency",
-    clientEmail: "accounts@abcagency.co",
-    amount: 30000,
-    currency: "INR",
-    dueDate: "2026-10-15",
-    daysOverdue: 13,
-    remindersUsed: 1,
-    remindersMax: 3,
-    status: "PROMISED",
-    r1SentDate: "16 Oct, 11:30 AM",
-    clientReply: {
-      date: "17 Oct, 02:15 PM",
-      text: "Waiting for client clearance, will clear by 30 Oct.",
-      aiIntent: "PAYMENT_PROMISE",
-      promisedDate: "30 Oct",
-    },
-  },
-  {
-    id: "inv-104",
-    invoiceNumber: "INV-104",
-    clientName: "Kiran Textiles",
-    clientEmail: "finance@kirantextiles.com",
-    amount: 45000,
-    currency: "INR",
-    dueDate: "2026-10-12",
-    daysOverdue: 16,
-    remindersUsed: 1,
-    remindersMax: 3,
-    status: "CLAIMED_PAID",
-    r1SentDate: "14 Oct, 02:00 PM",
-    clientReply: {
-      date: "20 Oct, 11:10 AM",
-      text: "I already paid this last week via bank transfer.",
-      aiIntent: "CLAIMED_PAID",
-    },
-  },
-  {
-    id: "inv-099",
-    invoiceNumber: "INV-099",
-    clientName: "Priya Mehta",
-    clientEmail: "priya@mehtadesign.com",
-    amount: 25000,
-    currency: "INR",
-    dueDate: "2026-10-01",
+    clientName: "Casey Wilson",
+    clientEmail: "futuretechdotcodotin@gmail.com",
+    amount: 7000,
+    currency: "USD",
+    invoiceDate: "12-10-2026",
+    dueDate: "28-10-2026",
     daysOverdue: 0,
-    remindersUsed: 1,
-    remindersMax: 3,
-    status: "RECOVERED",
-    r1SentDate: "02 Oct, 10:00 AM",
+    status: "Pending",
+    reminder1: false,
+    reminder2: false,
+    reminder3: false,
+    paymentVerified: false,
   },
 ];
 
@@ -128,22 +115,19 @@ function formatNumber(num: number): string {
 export default function CRMDashboard() {
   const [invoices, setInvoices] = useState<Invoice[]>(INITIAL_INVOICES);
   const [currentView, setCurrentView] = useState<ViewMode>("dashboard");
-  const [activeInvoiceId, setActiveInvoiceId] = useState<string>("inv-101");
-  const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [selectedInvoiceId, setSelectedInvoiceId] = useState<string>("inv-103");
+  const [statusFilter, setStatusFilter] = useState<string>("All Invoices");
   const [searchQuery, setSearchQuery] = useState("");
 
   // Modals
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isCsvModalOpen, setIsCsvModalOpen] = useState(false);
+  const [invoiceToVerify, setInvoiceToVerify] = useState<Invoice | null>(null);
 
-  // Review Draft State
-  const [draftSubject, setDraftSubject] = useState("");
-  const [draftBody, setDraftBody] = useState("");
-  const [isSending, setIsSending] = useState(false);
-  const [toastMsg, setToastMsg] = useState<string | null>(null);
-
-  // Add A Invoice Form (No payment link)
-  const [newInvoice, setNewInvoice] = useState({
+  // Edit / Add Form State
+  const [formData, setFormData] = useState({
+    id: "",
     invoiceNumber: "",
     clientName: "",
     clientEmail: "",
@@ -151,111 +135,155 @@ export default function CRMDashboard() {
     dueDate: "",
   });
 
+  // Review Draft State
+  const [draftSubject, setDraftSubject] = useState("");
+  const [draftBody, setDraftBody] = useState("");
+  const [isSending, setIsSending] = useState(false);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+
   const showToast = (msg: string) => {
     setToastMsg(msg);
-    setTimeout(() => setToastMsg(null), 3000);
+    setTimeout(() => setToastMsg(null), 3200);
   };
 
-  const activeInvoice = invoices.find((inv) => inv.id === activeInvoiceId) || invoices[0];
+  const selectedInvoice = invoices.find((inv) => inv.id === selectedInvoiceId) || invoices[0];
+
+  const getNextReminderNumber = (inv: Invoice): 1 | 2 | 3 => {
+    if (!inv.reminder1) return 1;
+    if (!inv.reminder2) return 2;
+    return 3;
+  };
 
   const openInvoiceDetail = (invId: string) => {
-    setActiveInvoiceId(invId);
-    setCurrentView("invoice");
+    setSelectedInvoiceId(invId);
+    setCurrentView("invoice_detail");
   };
 
   const openReviewDraft = (invId: string) => {
-    setActiveInvoiceId(invId);
+    setSelectedInvoiceId(invId);
     const target = invoices.find((i) => i.id === invId) || invoices[0];
-    const nextNum = Math.min(3, target.remindersUsed + 1);
+    const nextR = getNextReminderNumber(target);
 
-    setDraftSubject(`Follow-up: Invoice ${target.invoiceNumber} (₹${formatNumber(target.amount)})`);
+    setDraftSubject(`Follow-up: Invoice ${target.invoiceNumber} ($${formatNumber(target.amount)})`);
 
-    if (target.clientReply?.promisedDate) {
+    if (nextR === 1) {
       setDraftBody(
-        `Hi ${target.clientName},\n\nI'm following up on invoice ${target.invoiceNumber} for ₹${formatNumber(target.amount)}, which was due on ${target.dueDate}.\n\nYou mentioned payment would be made by ${target.clientReply.promisedDate}, and we have not yet received it. Could you please confirm when the payment will be processed?\n\nThank you,\nHarsh`
+        `Hi ${target.clientName},\n\nHope you're having a productive week! Just following up on invoice ${target.invoiceNumber} for $${formatNumber(target.amount)}, which was due on ${target.dueDate}.\n\nPlease let me know once the payment is initiated.\n\nBest regards,\nHarsh Malviya`
+      );
+    } else if (nextR === 2) {
+      setDraftBody(
+        `Dear ${target.clientName},\n\nWe haven't received payment for invoice ${target.invoiceNumber} ($${formatNumber(target.amount)}), which is now ${target.daysOverdue} days past due.\n\nCould you please confirm when the transfer will be completed today?\n\nSincerely,\nHarsh Malviya`
       );
     } else {
       setDraftBody(
-        `Hi ${target.clientName},\n\nThis is a follow-up reminder regarding invoice ${target.invoiceNumber} for ₹${formatNumber(target.amount)}, due on ${target.dueDate} (${target.daysOverdue} days overdue).\n\nPlease let us know when we can expect payment.\n\nThank you,\nHarsh`
+        `ATTN: ${target.clientName},\n\nInvoice ${target.invoiceNumber} for $${formatNumber(target.amount)} is significantly overdue by ${target.daysOverdue} days.\n\nThis is our final reminder before formal follow-up. Please process payment immediately.\n\nAccounts Receivable`
       );
     }
-    setCurrentView("review");
-  };
-
-  const openVerifyPayment = (invId: string) => {
-    setActiveInvoiceId(invId);
-    setCurrentView("verify");
+    setCurrentView("review_draft");
   };
 
   const handleSendReminder = () => {
     setIsSending(true);
     setTimeout(() => {
       setIsSending(false);
+      const nextR = getNextReminderNumber(selectedInvoice);
+
       setInvoices((prev) =>
-        prev.map((item) =>
-          item.id === activeInvoice.id
-            ? {
-                ...item,
-                remindersUsed: Math.min(item.remindersMax, item.remindersUsed + 1),
-                r2SentDate: item.remindersUsed === 1 ? "Today, Just now" : item.r2SentDate,
-                r3SentDate: item.remindersUsed === 2 ? "Today, Just now" : item.r3SentDate,
-              }
-            : item
-        )
+        prev.map((item) => {
+          if (item.id !== selectedInvoice.id) return item;
+          if (nextR === 1) return { ...item, reminder1: true };
+          if (nextR === 2) return { ...item, reminder2: true };
+          return { ...item, reminder3: true };
+        })
       );
-      showToast(`Reminder R${activeInvoice.remindersUsed + 1} sent to ${activeInvoice.clientEmail}`);
-      setCurrentView("invoice");
+      showToast(`Reminder R${nextR} sent to ${selectedInvoice.clientEmail}`);
+      setCurrentView("invoice_detail");
     }, 600);
   };
 
-  const handleVerifyPaid = () => {
+  const handleOpenEdit = (inv: Invoice, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setFormData({
+      id: inv.id,
+      invoiceNumber: inv.invoiceNumber,
+      clientName: inv.clientName,
+      clientEmail: inv.clientEmail,
+      amount: inv.amount.toString(),
+      dueDate: inv.dueDate,
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setInvoices((prev) =>
+      prev.map((inv) =>
+        inv.id === formData.id
+          ? {
+              ...inv,
+              invoiceNumber: formData.invoiceNumber,
+              clientName: formData.clientName,
+              clientEmail: formData.clientEmail,
+              amount: parseFloat(formData.amount) || inv.amount,
+              dueDate: formData.dueDate,
+            }
+          : inv
+      )
+    );
+    setIsEditModalOpen(false);
+    showToast(`Invoice ${formData.invoiceNumber} updated.`);
+  };
+
+  const handleConfirmVerification = () => {
+    if (!invoiceToVerify) return;
+
     setInvoices((prev) =>
       prev.map((item) =>
-        item.id === activeInvoice.id
+        item.id === invoiceToVerify.id
           ? {
               ...item,
-              status: "RECOVERED",
-              daysOverdue: 0,
+              paymentVerified: true,
+              status: "Paid",
+              verifiedAt: new Date().toLocaleDateString("en-GB"),
             }
           : item
       )
     );
-    showToast(`Invoice ${activeInvoice.invoiceNumber} verified and marked as PAID!`);
-    setCurrentView("dashboard");
-  };
-
-  const handleVerifyReject = () => {
-    showToast(`Payment not received. Reminders remain paused and requested proof from ${activeInvoice.clientName}.`);
-    setCurrentView("invoice");
+    showToast(`Payment of $${formatNumber(invoiceToVerify.amount)} verified for ${invoiceToVerify.invoiceNumber}. Final status updated.`);
+    setInvoiceToVerify(null);
   };
 
   const handleAddInvoice = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newInvoice.invoiceNumber || !newInvoice.clientName || !newInvoice.amount) return;
+    if (!formData.invoiceNumber || !formData.clientName || !formData.amount) return;
 
     const days = Math.floor(
-      (new Date().getTime() - new Date(newInvoice.dueDate || new Date()).getTime()) /
+      (new Date().getTime() - new Date(formData.dueDate || new Date()).getTime()) /
         (1000 * 3600 * 24)
     );
 
     const created: Invoice = {
       id: `inv-${Date.now()}`,
-      invoiceNumber: newInvoice.invoiceNumber,
-      clientName: newInvoice.clientName,
-      clientEmail: newInvoice.clientEmail,
-      amount: parseFloat(newInvoice.amount),
-      currency: "INR",
-      dueDate: newInvoice.dueDate || new Date().toISOString().split("T")[0],
+      invoiceNumber: formData.invoiceNumber,
+      clientName: formData.clientName,
+      clientEmail: formData.clientEmail,
+      amount: parseFloat(formData.amount),
+      currency: "USD",
+      invoiceDate: new Date().toLocaleDateString("en-GB").replace(/\//g, "-"),
+      dueDate: formData.dueDate || new Date().toISOString().split("T")[0],
       daysOverdue: Math.max(0, days),
-      remindersUsed: 0,
-      remindersMax: 3,
-      status: "OVERDUE",
+      status: days > 0 ? "Overdue" : "Pending",
+      reminder1: false,
+      reminder2: false,
+      reminder3: false,
+      paymentVerified: false,
     };
 
     setInvoices([created, ...invoices]);
     setIsAddModalOpen(false);
     showToast(`Invoice ${created.invoiceNumber} added.`);
-    setNewInvoice({
+    setFormData({
+      id: "",
       invoiceNumber: "",
       clientName: "",
       clientEmail: "",
@@ -264,18 +292,16 @@ export default function CRMDashboard() {
     });
   };
 
-  // Filter
+  // Filters
   const filteredInvoices = invoices.filter((inv) => {
     const matchesStatus =
-      statusFilter === "ALL"
+      statusFilter === "All Invoices"
         ? true
-        : statusFilter === "OVERDUE"
-        ? inv.status === "OVERDUE"
-        : statusFilter === "PROMISED"
-        ? inv.status === "PROMISED"
-        : statusFilter === "CLAIMED_PAID"
-        ? inv.status === "CLAIMED_PAID"
-        : inv.status === "RECOVERED";
+        : statusFilter === "Overdue"
+        ? inv.status === "Overdue"
+        : statusFilter === "Pending"
+        ? inv.status === "Pending"
+        : inv.status === "Paid";
 
     const matchesSearch =
       inv.clientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -286,19 +312,20 @@ export default function CRMDashboard() {
   });
 
   const totalOverdueAmount = invoices
-    .filter((i) => i.status === "OVERDUE" || i.status === "PROMISED" || i.status === "CLAIMED_PAID")
+    .filter((i) => i.status === "Overdue")
     .reduce((sum, i) => sum + i.amount, 0);
 
-  const actionCount = invoices.filter((i) => i.status === "OVERDUE" || i.status === "CLAIMED_PAID").length;
+  const overdueCount = invoices.filter((i) => i.status === "Overdue").length;
+  const pendingVerificationCount = invoices.filter((i) => !i.paymentVerified).length;
 
   return (
     <div className="flex h-screen bg-[#0D1117] text-slate-100 font-sans selection:bg-indigo-500 selection:text-white antialiased overflow-hidden">
       {/* ========================================================= */}
-      {/* CRM SIDEBAR WITH THE 4 CORE WORKFLOWS                     */}
+      {/* SIDEBAR NAVIGATION                                        */}
       {/* ========================================================= */}
       <aside className="w-60 border-r border-slate-800 bg-[#161B22] flex flex-col justify-between shrink-0">
         <div>
-          {/* Brand Header (NO GREEN DOT) */}
+          {/* Brand Header */}
           <div className="h-16 px-5 flex items-center gap-3 border-b border-slate-800">
             <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center font-bold text-white shadow-sm">
               <Bot className="w-4 h-4" />
@@ -307,11 +334,11 @@ export default function CRMDashboard() {
               <div className="font-semibold text-sm text-white tracking-tight">
                 RecoverAgent
               </div>
-              <div className="text-[11px] text-slate-400">Payment Recovery</div>
+              <div className="text-[11px] text-slate-400">Payment Follow-up</div>
             </div>
           </div>
 
-          {/* Core 4 Navigation Views */}
+          {/* Navigation Links */}
           <nav className="p-3 space-y-1">
             <button
               onClick={() => setCurrentView("dashboard")}
@@ -323,52 +350,45 @@ export default function CRMDashboard() {
             >
               <LayoutDashboard className="w-4 h-4" />
               <span>Dashboard</span>
-              {actionCount > 0 && (
-                <span className="ml-auto px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                  {actionCount}
-                </span>
-              )}
             </button>
 
             <button
-              onClick={() => setCurrentView("invoice")}
+              onClick={() => setCurrentView("invoices")}
               className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition ${
-                currentView === "invoice"
+                currentView === "invoices" || currentView === "invoice_detail" || currentView === "review_draft"
                   ? "bg-indigo-600 text-white font-semibold shadow-sm"
                   : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
               }`}
             >
               <FileText className="w-4 h-4" />
-              <span>Invoice Detail</span>
+              <span>Invoices</span>
+              {overdueCount > 0 && (
+                <span className="ml-auto px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                  {overdueCount}
+                </span>
+              )}
             </button>
 
             <button
-              onClick={() => setCurrentView("review")}
+              onClick={() => setCurrentView("verification")}
               className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition ${
-                currentView === "review"
-                  ? "bg-indigo-600 text-white font-semibold shadow-sm"
-                  : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
-              }`}
-            >
-              <Send className="w-4 h-4" />
-              <span>Review Draft</span>
-            </button>
-
-            <button
-              onClick={() => setCurrentView("verify")}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition ${
-                currentView === "verify"
+                currentView === "verification"
                   ? "bg-indigo-600 text-white font-semibold shadow-sm"
                   : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
               }`}
             >
               <UserCheck className="w-4 h-4" />
-              <span>Verify Payment</span>
+              <span>Payment Verification</span>
+              {pendingVerificationCount > 0 && (
+                <span className="ml-auto px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-400 border border-slate-700">
+                  {pendingVerificationCount}
+                </span>
+              )}
             </button>
           </nav>
         </div>
 
-        {/* User Profile Footer */}
+        {/* User Workspace Profile Footer */}
         <div className="p-3 border-t border-slate-800">
           <div className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-slate-800/60 transition">
             <div className="w-7 h-7 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-xs font-semibold text-slate-300">
@@ -383,46 +403,76 @@ export default function CRMDashboard() {
       </aside>
 
       {/* ========================================================= */}
-      {/* MAIN VIEW CONTAINER                                       */}
+      {/* MAIN CONTENT AREA                                         */}
       {/* ========================================================= */}
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
         <main className="p-8 space-y-6 max-w-5xl w-full mx-auto">
 
           {/* ========================================================= */}
-          {/* VIEW 1: DASHBOARD                                         */}
+          {/* VIEW 1: DASHBOARD (Overview)                              */}
           {/* ========================================================= */}
           {currentView === "dashboard" && (
             <div className="space-y-6">
-              {/* Header Info */}
               <div>
                 <div className="text-[11px] font-mono uppercase tracking-wider text-amber-400 font-semibold">Overview</div>
-                <h1 className="text-2xl font-bold text-white tracking-tight">Needs your attention</h1>
-                <p className="text-xs text-slate-400 mt-0.5">Aaj kya karna hai, sirf wahi yahan dikhta hai.</p>
+                <h1 className="text-2xl font-bold text-white tracking-tight">Recovery Dashboard</h1>
+                <p className="text-xs text-slate-400 mt-0.5">High level summary of outstanding receivables and follow-up activities.</p>
               </div>
 
               {/* Stats Row */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="bg-[#161B22] border border-slate-800 rounded-xl p-4">
-                  <div className="text-2xl font-bold text-white">₹{formatNumber(totalOverdueAmount)}</div>
-                  <div className="text-xs text-slate-400 mt-1">Total overdue across {invoices.length} invoices</div>
+                  <div className="text-2xl font-bold text-white">${formatNumber(totalOverdueAmount)}</div>
+                  <div className="text-xs text-slate-400 mt-1">Total overdue receivables</div>
                 </div>
                 <div className="bg-[#161B22] border border-slate-800 rounded-xl p-4">
-                  <div className="text-2xl font-bold text-amber-400">{actionCount}</div>
-                  <div className="text-xs text-slate-400 mt-1">Need your action today</div>
+                  <div className="text-2xl font-bold text-amber-400">{overdueCount}</div>
+                  <div className="text-xs text-slate-400 mt-1">Active overdue follow-ups</div>
                 </div>
                 <div className="bg-[#161B22] border border-slate-800 rounded-xl p-4">
-                  <div className="text-2xl font-bold text-slate-200">1</div>
-                  <div className="text-xs text-slate-400 mt-1">Promise due this week</div>
+                  <div className="text-2xl font-bold text-emerald-400">
+                    {invoices.filter((i) => i.status === "Paid").length}
+                  </div>
+                  <div className="text-xs text-slate-400 mt-1">Payments verified & settled</div>
                 </div>
               </div>
 
-              {/* Invoices Card */}
+              {/* Quick Actions Card */}
+              <div className="bg-[#161B22] border border-slate-800 rounded-xl p-6 flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-semibold text-white">Manage & Track Invoices</h3>
+                  <p className="text-xs text-slate-400 mt-1">
+                    View complete invoice registry, edit records, send automated follow-up drafts, or verify incoming credits.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setCurrentView("invoices")}
+                  className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2 rounded-lg transition"
+                >
+                  Go to Invoices
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ========================================================= */}
+          {/* VIEW 2: INVOICES REGISTRY (With Search, Edit & Add)      */}
+          {/* ========================================================= */}
+          {currentView === "invoices" && (
+            <div className="space-y-6">
+              <div>
+                <div className="text-[11px] font-mono uppercase tracking-wider text-amber-400 font-semibold">Registry</div>
+                <h1 className="text-2xl font-bold text-white tracking-tight">Invoices</h1>
+                <p className="text-xs text-slate-400 mt-0.5">Manage invoices, edit details, and trigger follow-up reminders.</p>
+              </div>
+
+              {/* Table Card */}
               <div className="bg-[#161B22] border border-slate-800 rounded-xl overflow-hidden shadow-sm">
-                {/* Search & Actions directly inside invoice table */}
+                {/* Header with Search and Actions */}
                 <div className="p-4 border-b border-slate-800 flex flex-col md:flex-row gap-3 items-center justify-between">
-                  {/* Status Filter Tabs */}
+                  {/* Clean Filter Tabs */}
                   <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto">
-                    {(["ALL", "OVERDUE", "PROMISED", "CLAIMED_PAID", "RECOVERED"] as const).map((tab) => (
+                    {(["All Invoices", "Overdue", "Pending", "Paid"] as const).map((tab) => (
                       <button
                         key={tab}
                         onClick={() => setStatusFilter(tab)}
@@ -432,18 +482,18 @@ export default function CRMDashboard() {
                             : "text-slate-400 hover:text-slate-200"
                         }`}
                       >
-                        {tab === "ALL" ? "All Invoices" : tab.replace("_", " ")}
+                        {tab}
                       </button>
                     ))}
                   </div>
 
                   {/* Search + Import CSV + Add A Invoice */}
                   <div className="flex items-center gap-2.5 w-full md:w-auto">
-                    <div className="relative w-full md:w-56">
+                    <div className="relative w-full md:w-52">
                       <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-500" />
                       <input
                         type="text"
-                        placeholder="Search client, invoice #..."
+                        placeholder="Search invoice or client..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="w-full bg-[#0D1117] text-xs text-slate-200 pl-8 pr-3 py-1.5 rounded-lg border border-slate-800 focus:outline-none focus:border-indigo-500 placeholder-slate-500"
@@ -459,8 +509,18 @@ export default function CRMDashboard() {
                     </button>
 
                     <button
-                      onClick={() => setIsAddModalOpen(true)}
-                      className="text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 px-3 py-1.5 rounded-lg shadow-sm flex items-center gap-1.5 shrink-0 transition"
+                      onClick={() => {
+                        setFormData({
+                          id: "",
+                          invoiceNumber: "",
+                          clientName: "",
+                          clientEmail: "",
+                          amount: "",
+                          dueDate: "",
+                        });
+                        setIsAddModalOpen(true);
+                      }}
+                      className="text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 px-3.5 py-1.5 rounded-lg shadow-sm flex items-center gap-1.5 shrink-0 transition"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       <span>Add A Invoice</span>
@@ -475,66 +535,140 @@ export default function CRMDashboard() {
                       key={inv.id}
                       className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-slate-800/30 transition"
                     >
+                      {/* Left: Client Info */}
                       <div className="space-y-1">
-                        <div className="font-semibold text-sm text-white">
-                          {inv.clientName} · {inv.invoiceNumber}
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-sm text-white">{inv.clientName}</span>
+                          <span className="text-slate-500 text-xs">·</span>
+                          <span className="font-mono text-xs text-slate-300 font-medium">{inv.invoiceNumber}</span>
+                          <span className="text-xs text-slate-500 font-mono">({inv.clientEmail})</span>
                         </div>
-                        <div className="text-xs text-slate-400">
-                          ₹{formatNumber(inv.amount)} · Due {inv.dueDate}
-                          {inv.status === "OVERDUE" && ` · ${inv.daysOverdue} days late`}
-                          {inv.status === "PROMISED" && ` · Promise: pay by ${inv.clientReply?.promisedDate}`}
-                          {inv.status === "CLAIMED_PAID" && ` · Client says paid, needs verification`}
-                          {inv.status === "RECOVERED" && ` · Payment verified`}
+                        <div className="text-xs text-slate-400 flex items-center gap-2 flex-wrap">
+                          <span className="font-semibold text-slate-200">${formatNumber(inv.amount)}</span>
+                          <span>·</span>
+                          <span>Due {inv.dueDate}</span>
+                          {inv.status === "Overdue" && (
+                            <>
+                              <span>·</span>
+                              <span className="text-amber-400 font-medium">{inv.daysOverdue} days late</span>
+                            </>
+                          )}
                         </div>
                       </div>
 
+                      {/* Right: Reminders, Status & Actions (NO raw tickbox) */}
                       <div className="flex items-center gap-3 shrink-0">
-                        {inv.status === "OVERDUE" && (
-                          <>
-                            <span className="text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                              R{inv.remindersUsed} SENT
-                            </span>
-                            <button
-                              onClick={() => openInvoiceDetail(inv.id)}
-                              className="text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white px-3.5 py-1.5 rounded-lg transition"
-                            >
-                              Open invoice
-                            </button>
-                          </>
-                        )}
-
-                        {inv.status === "PROMISED" && (
-                          <>
-                            <span className="text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
-                              PROMISED
-                            </span>
-                            <button
-                              onClick={() => openInvoiceDetail(inv.id)}
-                              className="text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-lg transition"
-                            >
-                              View
-                            </button>
-                          </>
-                        )}
-
-                        {inv.status === "CLAIMED_PAID" && (
-                          <>
-                            <span className="text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                              CLAIMED PAID
-                            </span>
-                            <button
-                              onClick={() => openVerifyPayment(inv.id)}
-                              className="text-xs font-semibold bg-amber-600 hover:bg-amber-500 text-white px-3.5 py-1.5 rounded-lg transition"
-                            >
-                              Verify
-                            </button>
-                          </>
-                        )}
-
-                        {inv.status === "RECOVERED" && (
-                          <span className="text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                            PAID
+                        {/* 3-Tier Reminder Badges */}
+                        <div className="flex items-center gap-1.5 text-xs">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${
+                            inv.reminder1
+                              ? "bg-indigo-500/10 text-indigo-400 border-indigo-500/30"
+                              : "bg-slate-800 text-slate-500 border-slate-700"
+                          }`}>
+                            R1 {inv.reminder1 ? "✓" : ""}
                           </span>
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${
+                            inv.reminder2
+                              ? "bg-indigo-500/10 text-indigo-400 border-indigo-500/30"
+                              : "bg-slate-800 text-slate-500 border-slate-700"
+                          }`}>
+                            R2 {inv.reminder2 ? "✓" : ""}
+                          </span>
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${
+                            inv.reminder3
+                              ? "bg-indigo-500/10 text-indigo-400 border-indigo-500/30"
+                              : "bg-slate-800 text-slate-500 border-slate-700"
+                          }`}>
+                            R3 {inv.reminder3 ? "✓" : ""}
+                          </span>
+                        </div>
+
+                        {/* Status Pill */}
+                        {inv.status === "Paid" ? (
+                          <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                            Paid
+                          </span>
+                        ) : inv.status === "Overdue" ? (
+                          <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                            Overdue
+                          </span>
+                        ) : (
+                          <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
+                            Pending
+                          </span>
+                        )}
+
+                        {/* Edit Button */}
+                        <button
+                          onClick={(e) => handleOpenEdit(inv, e)}
+                          title="Edit Invoice"
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition border border-transparent hover:border-slate-700"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+
+                        {/* Open Detail Action */}
+                        <button
+                          onClick={() => openInvoiceDetail(inv.id)}
+                          className="text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white px-3.5 py-1.5 rounded-lg transition"
+                        >
+                          Open Invoice
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ========================================================= */}
+          {/* VIEW 3: PAYMENT VERIFICATION                              */}
+          {/* ========================================================= */}
+          {currentView === "verification" && (
+            <div className="space-y-6">
+              <div>
+                <div className="text-[11px] font-mono uppercase tracking-wider text-amber-400 font-semibold">Settlement</div>
+                <h1 className="text-2xl font-bold text-white tracking-tight">Payment Verification</h1>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Confirm receipt of payment in your bank or payment gateway. Once verified, follow-ups permanently stop.
+                </p>
+              </div>
+
+              <div className="bg-[#161B22] border border-slate-800 rounded-xl overflow-hidden">
+                <div className="p-4 border-b border-slate-800 font-semibold text-xs text-slate-300">
+                  Pending Verification Invoices
+                </div>
+
+                <div className="divide-y divide-slate-800/80">
+                  {invoices.map((inv) => (
+                    <div key={inv.id} className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div>
+                        <div className="font-semibold text-sm text-white">
+                          {inv.clientName} · {inv.invoiceNumber}
+                        </div>
+                        <div className="text-xs text-slate-400 mt-0.5">
+                          Amount: <strong className="text-slate-200">${formatNumber(inv.amount)}</strong> · Due {inv.dueDate} · Status:{" "}
+                          <span className={inv.status === "Paid" ? "text-emerald-400 font-medium" : "text-amber-400 font-medium"}>
+                            {inv.status}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div>
+                        {inv.paymentVerified ? (
+                          <div className="flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-lg">
+                            <Check className="w-3.5 h-3.5" />
+                            <span>Payment Verified (Final)</span>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setInvoiceToVerify(inv)}
+                            className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-4 py-1.5 rounded-lg transition flex items-center gap-1.5 shadow-sm"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                            <span>Verify Payment Received</span>
+                          </button>
                         )}
                       </div>
                     </div>
@@ -545,146 +679,155 @@ export default function CRMDashboard() {
           )}
 
           {/* ========================================================= */}
-          {/* VIEW 2: INVOICE DETAIL                                    */}
+          {/* VIEW 4: INVOICE DETAIL (Opened directly from an invoice)  */}
           {/* ========================================================= */}
-          {currentView === "invoice" && (
+          {currentView === "invoice_detail" && (
             <div className="space-y-6">
               <div>
                 <button
-                  onClick={() => setCurrentView("dashboard")}
+                  onClick={() => setCurrentView("invoices")}
                   className="text-xs text-slate-400 hover:text-white flex items-center gap-1 mb-2"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
-                  Back to Dashboard
+                  Back to Invoices
                 </button>
-                <div className="text-[11px] font-mono uppercase tracking-wider text-amber-400 font-semibold">Invoice</div>
+                <div className="text-[11px] font-mono uppercase tracking-wider text-amber-400 font-semibold">Invoice Detail</div>
                 <h1 className="text-2xl font-bold text-white tracking-tight">
-                  {activeInvoice.invoiceNumber} · {activeInvoice.clientName}
+                  {selectedInvoice.invoiceNumber} · {selectedInvoice.clientName}
                 </h1>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  ₹{formatNumber(activeInvoice.amount)} · Due {activeInvoice.dueDate} · {activeInvoice.daysOverdue} days overdue · Reminders used {activeInvoice.remindersUsed} of {activeInvoice.remindersMax}
+                  ${formatNumber(selectedInvoice.amount)} · Due {selectedInvoice.dueDate} · {selectedInvoice.daysOverdue} days overdue · Contact: {selectedInvoice.clientEmail}
                 </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Reminder History */}
+                {/* 3-Step Reminder History */}
                 <div className="bg-[#161B22] border border-slate-800 rounded-xl p-5 space-y-4">
-                  <div className="font-semibold text-white text-sm">Reminder history</div>
+                  <div className="font-semibold text-white text-sm">Reminder History</div>
                   
                   <div className="relative border-l-2 border-slate-800 ml-2 space-y-6 pl-4 py-1">
+                    {/* R1 */}
                     <div className="relative">
-                      <div className={`absolute -left-[23px] top-1 w-3 h-3 rounded-full border-2 ${activeInvoice.remindersUsed >= 1 ? "bg-indigo-600 border-indigo-400" : "bg-slate-900 border-slate-700"}`}></div>
-                      <div className="font-semibold text-xs text-white">R1 sent</div>
+                      <div className={`absolute -left-[23px] top-1 w-3 h-3 rounded-full border-2 ${selectedInvoice.reminder1 ? "bg-indigo-600 border-indigo-400" : "bg-slate-900 border-slate-700"}`}></div>
+                      <div className="font-semibold text-xs text-white">R1 (Friendly Reminder)</div>
                       <div className="text-[11px] text-slate-400 mt-0.5">
-                        {activeInvoice.remindersUsed >= 1 ? `${activeInvoice.r1SentDate || "12 Oct"} · Delivered` : "Not sent"}
+                        {selectedInvoice.reminder1 ? "Sent · Delivered" : "Not sent yet"}
                       </div>
-                    </div>
-
-                    <div className="relative">
-                      <div className={`absolute -left-[23px] top-1 w-3 h-3 rounded-full border-2 ${activeInvoice.remindersUsed >= 2 ? "bg-indigo-600 border-indigo-400" : activeInvoice.remindersUsed === 1 ? "bg-amber-400 border-amber-300 animate-pulse" : "bg-slate-900 border-slate-700"}`}></div>
-                      <div className="font-semibold text-xs text-white">R2 · {activeInvoice.remindersUsed >= 2 ? "sent" : "not sent"}</div>
-                      <div className="text-[11px] text-slate-400 mt-0.5">
-                        {activeInvoice.remindersUsed >= 2 ? "Delivered" : "Available after your review"}
-                      </div>
-                      {activeInvoice.remindersUsed === 1 && activeInvoice.status !== "RECOVERED" && (
-                        <div className="mt-2.5">
+                      {!selectedInvoice.reminder1 && selectedInvoice.status !== "Paid" && (
+                        <div className="mt-2">
                           <button
-                            onClick={() => openReviewDraft(activeInvoice.id)}
+                            onClick={() => openReviewDraft(selectedInvoice.id)}
                             className="text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-3 py-1.5 rounded-lg transition"
                           >
-                            Review R2 draft
+                            Review R1 Draft
                           </button>
                         </div>
                       )}
                     </div>
 
+                    {/* R2 */}
                     <div className="relative">
-                      <div className={`absolute -left-[23px] top-1 w-3 h-3 rounded-full border-2 ${activeInvoice.remindersUsed >= 3 ? "bg-indigo-600 border-indigo-400" : "bg-slate-900 border-slate-700"}`}></div>
-                      <div className="font-semibold text-xs text-white">R3 · not sent</div>
-                      <div className="text-[11px] text-slate-400 mt-0.5">Only after R2</div>
+                      <div className={`absolute -left-[23px] top-1 w-3 h-3 rounded-full border-2 ${selectedInvoice.reminder2 ? "bg-indigo-600 border-indigo-400" : selectedInvoice.reminder1 ? "bg-amber-400 border-amber-300 animate-pulse" : "bg-slate-900 border-slate-700"}`}></div>
+                      <div className="font-semibold text-xs text-white">R2 (Firm Follow-up)</div>
+                      <div className="text-[11px] text-slate-400 mt-0.5">
+                        {selectedInvoice.reminder2 ? "Sent · Delivered" : selectedInvoice.reminder1 ? "Ready after cooldown" : "Locked until R1"}
+                      </div>
+                      {selectedInvoice.reminder1 && !selectedInvoice.reminder2 && selectedInvoice.status !== "Paid" && (
+                        <div className="mt-2">
+                          <button
+                            onClick={() => openReviewDraft(selectedInvoice.id)}
+                            className="text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-3 py-1.5 rounded-lg transition"
+                          >
+                            Review R2 Draft
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* R3 */}
+                    <div className="relative">
+                      <div className={`absolute -left-[23px] top-1 w-3 h-3 rounded-full border-2 ${selectedInvoice.reminder3 ? "bg-indigo-600 border-indigo-400" : "bg-slate-900 border-slate-700"}`}></div>
+                      <div className="font-semibold text-xs text-white">R3 (Final Notice)</div>
+                      <div className="text-[11px] text-slate-400 mt-0.5">
+                        {selectedInvoice.reminder3 ? "Sent · Delivered" : "Only unlocks after R2"}
+                      </div>
+                      {selectedInvoice.reminder2 && !selectedInvoice.reminder3 && selectedInvoice.status !== "Paid" && (
+                        <div className="mt-2">
+                          <button
+                            onClick={() => openReviewDraft(selectedInvoice.id)}
+                            className="text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-3 py-1.5 rounded-lg transition"
+                          >
+                            Review Final R3 Draft
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
 
-                {/* Client Reply & AI Reading */}
+                {/* Quick Edit & Actions */}
                 <div className="bg-[#161B22] border border-slate-800 rounded-xl p-5 space-y-4">
-                  <div className="font-semibold text-white text-sm">Client reply</div>
-                  {activeInvoice.clientReply ? (
-                    <div className="space-y-3">
-                      <div className="text-[11px] text-slate-400">{activeInvoice.clientReply.date}</div>
-                      <div className="p-3 rounded-lg bg-amber-500/10 border-l-4 border-amber-500 text-amber-200 text-xs italic font-serif">
-                        "{activeInvoice.clientReply.text}"
-                      </div>
-
-                      <div className="border border-dashed border-slate-700 bg-[#0D1117] rounded-xl p-4 space-y-2">
-                        <div className="font-mono text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
-                          AI READING
-                        </div>
-                        <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-200 border border-slate-700 inline-block">
-                          {activeInvoice.clientReply.aiIntent.replace("_", " ")}
-                        </span>
-                        {activeInvoice.clientReply.promisedDate && (
-                          <div className="text-xs text-slate-200">
-                            Promised date: <b>{activeInvoice.clientReply.promisedDate}</b>
-                            <div className="text-[11px] text-slate-400 mt-0.5">
-                              Reminders are paused until {activeInvoice.clientReply.promisedDate}.
-                            </div>
-                          </div>
-                        )}
-                        <div className="flex items-center gap-2 pt-2 border-t border-slate-800">
-                          <button
-                            onClick={() => showToast("Promise confirmed")}
-                            className="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1 rounded-lg transition"
-                          >
-                            Confirm
-                          </button>
-                          <button
-                            onClick={() => showToast("Correction opened")}
-                            className="text-xs text-slate-400 hover:text-white px-2 py-1"
-                          >
-                            Correct
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="text-[11px] text-slate-500">
-                        A promise is not payment. This invoice stays unpaid until you verify a payment.
-                      </div>
+                  <div className="font-semibold text-white text-sm">Invoice Status & Edit</div>
+                  
+                  <div className="p-4 bg-[#0D1117] border border-slate-800 rounded-xl space-y-3">
+                    <div className="text-xs text-slate-300">
+                      Payment Verification:{" "}
+                      <strong className={selectedInvoice.paymentVerified ? "text-emerald-400" : "text-amber-400"}>
+                        {selectedInvoice.paymentVerified ? "Verified (Paid)" : "Unverified (Outstanding)"}
+                      </strong>
                     </div>
-                  ) : (
-                    <div className="text-xs text-slate-500 py-6 text-center">
-                      No reply recorded yet.
+
+                    <div className="flex items-center gap-2 pt-1">
+                      <button
+                        onClick={() => handleOpenEdit(selectedInvoice)}
+                        className="text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 transition"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                        <span>Edit Details</span>
+                      </button>
+
+                      {!selectedInvoice.paymentVerified && (
+                        <button
+                          onClick={() => setInvoiceToVerify(selectedInvoice)}
+                          className="text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 transition"
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                          <span>Verify Payment</span>
+                        </button>
+                      )}
                     </div>
-                  )}
+                  </div>
                 </div>
               </div>
             </div>
           )}
 
           {/* ========================================================= */}
-          {/* VIEW 3: REVIEW DRAFT                                      */}
+          {/* VIEW 5: REVIEW DRAFT                                      */}
           {/* ========================================================= */}
-          {currentView === "review" && (
+          {currentView === "review_draft" && (
             <div className="space-y-6">
               <div>
                 <button
-                  onClick={() => setCurrentView("invoice")}
+                  onClick={() => setCurrentView("invoice_detail")}
                   className="text-xs text-slate-400 hover:text-white flex items-center gap-1 mb-2"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
                   Back to Invoice
                 </button>
-                <div className="text-[11px] font-mono uppercase tracking-wider text-amber-400 font-semibold">Review before sending</div>
-                <h1 className="text-2xl font-bold text-white tracking-tight">Review R{activeInvoice.remindersUsed + 1} draft</h1>
+                <div className="text-[11px] font-mono uppercase tracking-wider text-amber-400 font-semibold">Review Reminder Draft</div>
+                <h1 className="text-2xl font-bold text-white tracking-tight">
+                  Review R{getNextReminderNumber(selectedInvoice)} Draft
+                </h1>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  {activeInvoice.invoiceNumber} · {activeInvoice.clientName} · AI ne ye draft banaya hai. Bhejne se pehle aap edit kar sakte hain.
+                  {selectedInvoice.invoiceNumber} · {selectedInvoice.clientName} · AI generated personalized reminder.
                 </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="md:col-span-2 bg-[#161B22] border border-slate-800 rounded-xl p-5 space-y-4">
                   <div className="p-3 bg-[#0D1117] border border-slate-800 rounded-lg text-xs text-slate-300">
-                    <b>Why this message:</b> R{activeInvoice.remindersUsed} was sent earlier and no payment has been received. {activeInvoice.clientReply?.promisedDate ? `The client promised payment, but that date has passed.` : `Scheduled follow-up cooldown elapsed.`}
+                    <b>Why this message:</b> Invoice is overdue by {selectedInvoice.daysOverdue} days. Next follow-up is Reminder {getNextReminderNumber(selectedInvoice)}.
                   </div>
 
                   <div className="space-y-1">
@@ -698,7 +841,7 @@ export default function CRMDashboard() {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs text-slate-400">Message</label>
+                    <label className="text-xs text-slate-400">Message Body</label>
                     <textarea
                       rows={8}
                       value={draftBody}
@@ -721,121 +864,42 @@ export default function CRMDashboard() {
                       ) : (
                         <>
                           <Send className="w-3.5 h-3.5" />
-                          <span>Send R{activeInvoice.remindersUsed + 1}</span>
+                          <span>Send R{getNextReminderNumber(selectedInvoice)}</span>
                         </>
                       )}
                     </button>
                     <button
-                      onClick={() => showToast("Draft saved locally")}
+                      onClick={() => showToast("Draft saved")}
                       className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs px-3.5 py-2 rounded-lg transition"
                     >
-                      Save draft
+                      Save Draft
                     </button>
                     <button
-                      onClick={() => setCurrentView("invoice")}
+                      onClick={() => setCurrentView("invoice_detail")}
                       className="text-xs text-slate-400 hover:text-white px-2 py-2"
                     >
                       Cancel
                     </button>
                   </div>
-
-                  <div className="text-[11px] text-slate-500">
-                    Ye R{activeInvoice.remindersUsed + 1} hai. R3 ke baad koi automatic reminder nahi jayega.
-                  </div>
                 </div>
 
                 <div className="bg-[#161B22] border border-slate-800 rounded-xl p-5 space-y-3 h-fit">
-                  <div className="font-semibold text-white text-sm">Checks before sending</div>
+                  <div className="font-semibold text-white text-sm">Status Checks</div>
                   <div className="space-y-2 text-xs divide-y divide-slate-800">
                     <div className="flex items-center justify-between pt-2">
                       <span className="text-slate-400">Invoice is overdue</span>
                       <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">OK</span>
                     </div>
                     <div className="flex items-center justify-between pt-2">
-                      <span className="text-slate-400">Not paid</span>
+                      <span className="text-slate-400">Not verified paid</span>
                       <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">OK</span>
                     </div>
                     <div className="flex items-center justify-between pt-2">
-                      <span className="text-slate-400">Promise date passed</span>
-                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">OK</span>
-                    </div>
-                    <div className="flex items-center justify-between pt-2">
-                      <span className="text-slate-400">Reminders used</span>
+                      <span className="text-slate-400">Next Stage</span>
                       <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
-                        {activeInvoice.remindersUsed} of 3
+                        R{getNextReminderNumber(selectedInvoice)} of 3
                       </span>
                     </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ========================================================= */}
-          {/* VIEW 4: VERIFY PAYMENT                                    */}
-          {/* ========================================================= */}
-          {currentView === "verify" && (
-            <div className="space-y-6">
-              <div>
-                <button
-                  onClick={() => setCurrentView("dashboard")}
-                  className="text-xs text-slate-400 hover:text-white flex items-center gap-1 mb-2"
-                >
-                  <ArrowLeft className="w-3.5 h-3.5" />
-                  Back to Dashboard
-                </button>
-                <div className="text-[11px] font-mono uppercase tracking-wider text-amber-400 font-semibold">Payment verification</div>
-                <h1 className="text-2xl font-bold text-white tracking-tight">Verify payment</h1>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  {activeInvoice.invoiceNumber} · {activeInvoice.clientName} · ₹{formatNumber(activeInvoice.amount)}
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="border border-slate-800 bg-[#161B22] rounded-xl p-5 space-y-4">
-                  <h3 className="font-semibold text-white text-base">Client says payment is done</h3>
-                  <div className="text-xs text-slate-400">
-                    Client reply: "{activeInvoice.clientReply?.text || "I already paid this last week."}"
-                  </div>
-
-                  <div className="p-3.5 bg-[#0D1117] border border-slate-800 rounded-lg text-xs text-slate-300">
-                    Invoice will be marked <b>PAID</b> only after you verify the payment yourself, for example in your bank account or UPI app. Ye claim ko system automatically paid nahi maanega.
-                  </div>
-
-                  <div className="flex items-center gap-2.5 pt-2">
-                    <button
-                      onClick={handleVerifyPaid}
-                      className="text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 rounded-lg transition"
-                    >
-                      I verified the payment
-                    </button>
-                    <button
-                      onClick={handleVerifyReject}
-                      className="text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-3 py-2 rounded-lg transition"
-                    >
-                      Payment not received
-                    </button>
-                  </div>
-                </div>
-
-                <div className="bg-[#161B22] border border-slate-800 rounded-xl p-5 space-y-3 h-fit">
-                  <div className="font-semibold text-white text-sm">While this is pending</div>
-                  <div className="space-y-2 text-xs divide-y divide-slate-800">
-                    <div className="flex items-center justify-between pt-2">
-                      <span className="text-slate-400">Normal reminders</span>
-                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">PAUSED</span>
-                    </div>
-                    <div className="flex items-center justify-between pt-2">
-                      <span className="text-slate-400">Status</span>
-                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">CLAIMED PAID</span>
-                    </div>
-                    <div className="flex items-center justify-between pt-2">
-                      <span className="text-slate-400">Marked paid</span>
-                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">NO</span>
-                    </div>
-                  </div>
-                  <div className="text-[11px] text-slate-500 pt-1">
-                    Client ka claim sirf ek signal hai, proof nahi.
                   </div>
                 </div>
               </div>
@@ -845,30 +909,82 @@ export default function CRMDashboard() {
       </div>
 
       {/* ========================================================= */}
-      {/* ADD A INVOICE MODAL                                       */}
+      {/* CONFIRM PAYMENT VERIFICATION MODAL ("ARE YOU SURE?")      */}
       {/* ========================================================= */}
-      {isAddModalOpen && (
+      {invoiceToVerify && (
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#161B22] border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl p-6 space-y-4">
+            <div className="flex items-center gap-3 text-amber-400">
+              <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center border border-amber-500/20">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-white">Confirm Payment Verification</h3>
+                <p className="text-xs text-slate-400">{invoiceToVerify.invoiceNumber} · {invoiceToVerify.clientName}</p>
+              </div>
+            </div>
+
+            <div className="p-3.5 bg-[#0D1117] border border-slate-800 rounded-xl text-xs text-slate-300 leading-relaxed">
+              Are you sure you want to verify payment of <strong className="text-white">${formatNumber(invoiceToVerify.amount)}</strong>?
+              <br /><br />
+              <span className="text-amber-400/90 font-medium">Important:</span> Once marked as verified, this action is final and all future automated follow-up reminders will be permanently stopped.
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setInvoiceToVerify(null)}
+                className="px-3.5 py-1.5 text-xs text-slate-400 hover:text-white"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmVerification}
+                className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-4 py-2 rounded-lg transition shadow-sm"
+              >
+                Yes, Verify & Mark Paid
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* ADD / EDIT INVOICE MODAL                                  */}
+      {/* ========================================================= */}
+      {(isAddModalOpen || isEditModalOpen) && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-[#161B22] border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl p-6 space-y-4">
             <div className="flex items-start justify-between border-b border-slate-800 pb-3">
               <div>
-                <h3 className="text-base font-bold text-white">Add A Invoice</h3>
-                <p className="text-xs text-slate-400 mt-0.5">Enter invoice details for automated follow-up.</p>
+                <h3 className="text-base font-bold text-white">
+                  {isEditModalOpen ? "Edit Invoice" : "Add A Invoice"}
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  {isEditModalOpen ? "Update details for this invoice." : "Enter invoice details for automated follow-up."}
+                </p>
               </div>
-              <button onClick={() => setIsAddModalOpen(false)} className="text-slate-400 hover:text-white">
+              <button
+                onClick={() => {
+                  setIsAddModalOpen(false);
+                  setIsEditModalOpen(false);
+                }}
+                className="text-slate-400 hover:text-white"
+              >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleAddInvoice} className="space-y-3.5 text-xs">
+            <form onSubmit={isEditModalOpen ? handleSaveEdit : handleAddInvoice} className="space-y-3.5 text-xs">
               <div className="space-y-1">
                 <label className="text-slate-300 font-medium">Invoice Number *</label>
                 <input
                   type="text"
                   required
-                  placeholder="INV-107"
-                  value={newInvoice.invoiceNumber}
-                  onChange={(e) => setNewInvoice({ ...newInvoice, invoiceNumber: e.target.value })}
+                  placeholder="INV-109"
+                  value={formData.invoiceNumber}
+                  onChange={(e) => setFormData({ ...formData, invoiceNumber: e.target.value })}
                   className="w-full bg-[#0D1117] border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-indigo-500"
                 />
               </div>
@@ -880,8 +996,8 @@ export default function CRMDashboard() {
                     type="text"
                     required
                     placeholder="Client Name"
-                    value={newInvoice.clientName}
-                    onChange={(e) => setNewInvoice({ ...newInvoice, clientName: e.target.value })}
+                    value={formData.clientName}
+                    onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
                     className="w-full bg-[#0D1117] border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-indigo-500"
                   />
                 </div>
@@ -890,9 +1006,9 @@ export default function CRMDashboard() {
                   <input
                     type="email"
                     required
-                    placeholder="client@company.com"
-                    value={newInvoice.clientEmail}
-                    onChange={(e) => setNewInvoice({ ...newInvoice, clientEmail: e.target.value })}
+                    placeholder="client@gmail.com"
+                    value={formData.clientEmail}
+                    onChange={(e) => setFormData({ ...formData, clientEmail: e.target.value })}
                     className="w-full bg-[#0D1117] border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-indigo-500"
                   />
                 </div>
@@ -900,13 +1016,13 @@ export default function CRMDashboard() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-slate-300 font-medium">Amount (₹) *</label>
+                  <label className="text-slate-300 font-medium">Amount ($) *</label>
                   <input
                     type="number"
                     required
-                    placeholder="40000"
-                    value={newInvoice.amount}
-                    onChange={(e) => setNewInvoice({ ...newInvoice, amount: e.target.value })}
+                    placeholder="2500"
+                    value={formData.amount}
+                    onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                     className="w-full bg-[#0D1117] border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-indigo-500"
                   />
                 </div>
@@ -915,8 +1031,8 @@ export default function CRMDashboard() {
                   <input
                     type="date"
                     required
-                    value={newInvoice.dueDate}
-                    onChange={(e) => setNewInvoice({ ...newInvoice, dueDate: e.target.value })}
+                    value={formData.dueDate}
+                    onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
                     className="w-full bg-[#0D1117] border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-indigo-500"
                   />
                 </div>
@@ -925,7 +1041,10 @@ export default function CRMDashboard() {
               <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
                 <button
                   type="button"
-                  onClick={() => setIsAddModalOpen(false)}
+                  onClick={() => {
+                    setIsAddModalOpen(false);
+                    setIsEditModalOpen(false);
+                  }}
                   className="px-3 py-1.5 text-slate-400 hover:text-white"
                 >
                   Cancel
@@ -934,7 +1053,7 @@ export default function CRMDashboard() {
                   type="submit"
                   className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-4 py-1.5 rounded-lg transition"
                 >
-                  Save Invoice
+                  {isEditModalOpen ? "Save Changes" : "Save Invoice"}
                 </button>
               </div>
             </form>
@@ -961,39 +1080,14 @@ export default function CRMDashboard() {
             <div className="border-2 border-dashed border-slate-700 rounded-xl p-8 text-center space-y-2 hover:border-indigo-500 transition cursor-pointer">
               <FileSpreadsheet className="w-8 h-8 text-slate-400 mx-auto" />
               <div className="text-xs text-slate-300">Click to upload CSV file</div>
-              <div className="text-[10px] text-slate-500">Columns: invoice_id, client_name, email, amount, due_date</div>
+              <div className="text-[10px] text-slate-500">Columns: Client_Name, Email_Address, Invoice_ID, Due_Date, Payment</div>
             </div>
 
-            <div className="flex items-center justify-between text-xs text-slate-400 pt-1">
-              <button
-                type="button"
-                onClick={() => {
-                  const sample: Invoice = {
-                    id: `csv-${Date.now()}`,
-                    invoiceNumber: "INV-108",
-                    clientName: "Alpha Logistics",
-                    clientEmail: "billing@alphalogistics.com",
-                    amount: 55000,
-                    currency: "INR",
-                    dueDate: "2026-10-18",
-                    daysOverdue: 10,
-                    remindersUsed: 1,
-                    remindersMax: 3,
-                    status: "OVERDUE",
-                    r1SentDate: "20 Oct 2026",
-                  };
-                  setInvoices([sample, ...invoices]);
-                  setIsCsvModalOpen(false);
-                  showToast("Sample invoice imported!");
-                }}
-                className="text-indigo-400 hover:underline"
-              >
-                Insert sample data
-              </button>
+            <div className="flex items-center justify-end pt-1">
               <button
                 type="button"
                 onClick={() => setIsCsvModalOpen(false)}
-                className="px-3 py-1 bg-slate-800 text-slate-300 rounded hover:bg-slate-700"
+                className="px-3 py-1 bg-slate-800 text-slate-300 rounded hover:bg-slate-700 text-xs"
               >
                 Close
               </button>
