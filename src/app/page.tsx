@@ -260,6 +260,14 @@ export default function CRMDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSidebarHovered, setIsSidebarHovered] = useState(false);
 
+  // Helper function to change view and save to localStorage
+  const navigateToView = (view: ViewMode) => {
+    setCurrentView(view);
+    try {
+      localStorage.setItem("recover_agent_active_view", view);
+    } catch (_) {}
+  };
+
   // Landing Page & Auth Modal States with LocalStorage Session Persistence
   const [pageMode, setPageMode] = useState<"app" | "landing">("app");
   const [authModal, setAuthModal] = useState<null | "login" | "signup">(null);
@@ -272,11 +280,21 @@ export default function CRMDashboard() {
     company: "Nexus Digital Studio",
   });
 
-  // Restore authenticated session from localStorage on client load
+  // Restore authenticated session & active tab view from localStorage on client load
   useEffect(() => {
     try {
       const storedAuth = localStorage.getItem("recover_agent_authenticated");
       const storedProfile = localStorage.getItem("recover_agent_user_profile");
+      const storedView = localStorage.getItem("recover_agent_active_view") as ViewMode | null;
+      const storedInvoiceId = localStorage.getItem("recover_agent_selected_invoice");
+
+      if (storedView) {
+        setCurrentView(storedView);
+      }
+      if (storedInvoiceId) {
+        setSelectedInvoiceId(storedInvoiceId);
+      }
+
       if (storedAuth === "true" && storedProfile) {
         setUserProfile(JSON.parse(storedProfile));
         setPageMode("app");
@@ -804,7 +822,7 @@ export default function CRMDashboard() {
           {/* Nav Items */}
           <nav className="p-1.5 space-y-1">
             <button
-              onClick={() => setCurrentView("dashboard")}
+              onClick={() => navigateToView("dashboard")}
               className={`w-full flex items-center ${
                 !isSidebarHovered ? "justify-center" : "gap-2.5 px-3"
               } py-2 rounded-lg text-xs font-medium transition ${
@@ -819,7 +837,7 @@ export default function CRMDashboard() {
             </button>
 
             <button
-              onClick={() => setCurrentView("invoices")}
+              onClick={() => navigateToView("invoices")}
               className={`w-full flex items-center ${
                 !isSidebarHovered ? "justify-center" : "gap-2.5 px-3"
               } py-2 rounded-lg text-xs font-medium transition ${
@@ -845,7 +863,7 @@ export default function CRMDashboard() {
             </button>
 
             <button
-              onClick={() => setCurrentView("clients")}
+              onClick={() => navigateToView("clients")}
               className={`w-full flex items-center ${
                 !isSidebarHovered ? "justify-center" : "gap-2.5 px-3"
               } py-2 rounded-lg text-xs font-medium transition ${
@@ -867,7 +885,7 @@ export default function CRMDashboard() {
             </button>
 
             <button
-              onClick={() => setCurrentView("verification")}
+              onClick={() => navigateToView("verification")}
               className={`w-full flex items-center ${
                 !isSidebarHovered ? "justify-center" : "gap-2.5 px-3"
               } py-2 rounded-lg text-xs font-medium transition ${
@@ -891,7 +909,7 @@ export default function CRMDashboard() {
             </button>
 
             <button
-              onClick={() => setCurrentView("activity")}
+              onClick={() => navigateToView("activity")}
               className={`w-full flex items-center ${
                 !isSidebarHovered ? "justify-center" : "gap-2.5 px-3"
               } py-2 rounded-lg text-xs font-medium transition ${
