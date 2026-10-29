@@ -163,31 +163,28 @@ export default function LandingPage({
             <div className="inline-flex p-1 bg-[#161B22] border border-slate-800 rounded-xl gap-1">
               <button
                 onClick={() => setActiveTier(1)}
-                className={`text-xs px-4 py-2 rounded-lg font-medium transition ${
-                  activeTier === 1
+                className={`text-xs px-4 py-2 rounded-lg font-medium transition ${activeTier === 1
                     ? "bg-indigo-600 text-white shadow-sm"
                     : "text-slate-400 hover:text-white"
-                }`}
+                  }`}
               >
                 Level 1 · Friendly Nudge (1–7 Days)
               </button>
               <button
                 onClick={() => setActiveTier(2)}
-                className={`text-xs px-4 py-2 rounded-lg font-medium transition ${
-                  activeTier === 2
+                className={`text-xs px-4 py-2 rounded-lg font-medium transition ${activeTier === 2
                     ? "bg-amber-600 text-white shadow-sm"
                     : "text-slate-400 hover:text-white"
-                }`}
+                  }`}
               >
                 Level 2 · Firm Follow-up (8–14 Days)
               </button>
               <button
                 onClick={() => setActiveTier(3)}
-                className={`text-xs px-4 py-2 rounded-lg font-medium transition ${
-                  activeTier === 3
+                className={`text-xs px-4 py-2 rounded-lg font-medium transition ${activeTier === 3
                     ? "bg-rose-600 text-white shadow-sm"
                     : "text-slate-400 hover:text-white"
-                }`}
+                  }`}
               >
                 Level 3 · Final Notice (15+ Days)
               </button>
@@ -201,13 +198,12 @@ export default function LandingPage({
                 <span className="text-slate-500 font-mono">To:</span>
                 <span className="text-slate-300 font-mono">client@company.com</span>
               </div>
-              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold border ${
-                activeTier === 1
+              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold border ${activeTier === 1
                   ? "bg-indigo-500/10 text-indigo-400 border-indigo-500/20"
                   : activeTier === 2
-                  ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
-                  : "bg-rose-500/10 text-rose-400 border-rose-500/20"
-              }`}>
+                    ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                    : "bg-rose-500/10 text-rose-400 border-rose-500/20"
+                }`}>
                 {activeTier === 1 ? "Friendly Courtesy" : activeTier === 2 ? "Firm Overdue" : "Final Demand"}
               </span>
             </div>
@@ -218,8 +214,8 @@ export default function LandingPage({
                 {activeTier === 1
                   ? "Quick reminder: Invoice INV-103 is ready for settlement"
                   : activeTier === 2
-                  ? "Second Follow-up: Overdue Invoice INV-103 ($2,900)"
-                  : "URGENT / FINAL NOTICE: Unpaid Invoice INV-103 ($2,900)"}
+                    ? "Second Follow-up: Overdue Invoice INV-103 ($2,900)"
+                    : "URGENT / FINAL NOTICE: Unpaid Invoice INV-103 ($2,900)"}
               </strong>
             </div>
 
