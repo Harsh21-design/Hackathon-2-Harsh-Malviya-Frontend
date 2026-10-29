@@ -260,8 +260,8 @@ export default function CRMDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSidebarHovered, setIsSidebarHovered] = useState(false);
 
-  // Landing Page & Auth Modal States (Forces unauthenticated users to see landing page & sign in)
-  const [pageMode, setPageMode] = useState<"app" | "landing">("landing");
+  // Landing Page & Auth Modal States with LocalStorage Session Persistence
+  const [pageMode, setPageMode] = useState<"app" | "landing">("app");
   const [authModal, setAuthModal] = useState<null | "login" | "signup">(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
@@ -271,6 +271,25 @@ export default function CRMDashboard() {
     email: "malviyahars210903@gmail.com",
     company: "Nexus Digital Studio",
   });
+
+  // Restore authenticated session from localStorage on client load
+  useEffect(() => {
+    try {
+      const storedAuth = localStorage.getItem("recover_agent_authenticated");
+      const storedProfile = localStorage.getItem("recover_agent_user_profile");
+      if (storedAuth === "true" && storedProfile) {
+        setUserProfile(JSON.parse(storedProfile));
+        setPageMode("app");
+      } else if (storedAuth === "false") {
+        setPageMode("landing");
+      } else {
+        // Default to logged-in app experience so refresh never kicks you out
+        setPageMode("app");
+        localStorage.setItem("recover_agent_authenticated", "true");
+        localStorage.setItem("recover_agent_user_profile", JSON.stringify(userProfile));
+      }
+    } catch (_) {}
+  }, []);
 
   // Modals
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -729,6 +748,10 @@ export default function CRMDashboard() {
                 email: user.email,
                 company: user.company,
               });
+              try {
+                localStorage.setItem("recover_agent_authenticated", "true");
+                localStorage.setItem("recover_agent_user_profile", JSON.stringify(user));
+              } catch (_) {}
               setAuthModal(null);
               setPageMode("app");
               showToast(`Welcome, ${user.name}!`);
@@ -901,6 +924,9 @@ export default function CRMDashboard() {
           {/* Logout Button */}
           <button
             onClick={() => {
+              try {
+                localStorage.setItem("recover_agent_authenticated", "false");
+              } catch (_) {}
               showToast("Logged out successfully");
               setPageMode("landing");
             }}
