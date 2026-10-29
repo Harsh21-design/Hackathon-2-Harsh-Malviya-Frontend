@@ -361,7 +361,7 @@ export default function LandingPage({
               </p>
               <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-mono">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span>System Operational · 18 Rules Active</span>
+                <span>System Operational</span>
               </div>
             </div>
 
@@ -379,11 +379,6 @@ export default function LandingPage({
                 </li>
                 <li>
                   <a href="#features" className="hover:text-white transition">Features</a>
-                </li>
-                <li>
-                  <button onClick={onOpenApp} className="hover:text-white transition text-left">
-                    Live Demo Mode
-                  </button>
                 </li>
               </ul>
             </div>
@@ -403,9 +398,6 @@ export default function LandingPage({
                   <button onClick={onOpenSignup} className="hover:text-white transition text-left">
                     Create Account
                   </button>
-                </li>
-                <li>
-                  <span className="text-[11px] text-slate-500">FastAPI + Supabase + Gemini</span>
                 </li>
               </ul>
             </div>
