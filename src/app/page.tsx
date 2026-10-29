@@ -341,9 +341,10 @@ export default function CRMDashboard() {
   const [isSending, setIsSending] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
-  const showToast = (msg: string) => {
-    setToastMsg(msg);
-    setTimeout(() => setToastMsg(null), 3200);
+  const showToast = (msg: any) => {
+    const text = typeof msg === "string" ? msg : (msg?.detail || msg?.message || JSON.stringify(msg));
+    setToastMsg(text);
+    setTimeout(() => setToastMsg(null), 3800);
   };
 
   // ── Load Real Data from Backend & Supabase on Mount ────────────────────────
@@ -478,15 +479,24 @@ export default function CRMDashboard() {
     setIsSending(true);
 
     try {
-      if (currentDraftId) {
-        await api.sendReminder(currentDraftId, draftSubject, draftBody);
+      let draftIdToSend = currentDraftId;
+
+      // If draft_id was not yet generated or lost, auto-create one before sending
+      if (!draftIdToSend) {
+        const nextR = getNextReminderNumber(selectedInvoice);
+        const autoDraft = await api.createDraft(selectedInvoice.id, nextR);
+        draftIdToSend = autoDraft.draft_id;
+        setCurrentDraftId(draftIdToSend);
       }
+
+      await api.sendReminder(draftIdToSend, draftSubject, draftBody);
       showToast(`Reminder sent to ${selectedInvoice.clientEmail}! Saved in database.`);
       await reloadData();
       setCurrentView("invoice_detail");
     } catch (err: any) {
-      console.error(err);
-      showToast(err.message || "Failed to send reminder.");
+      console.error("Send reminder error:", err);
+      const errMsg = err?.message || (typeof err === "object" ? JSON.stringify(err) : "Failed to send reminder.");
+      showToast(errMsg);
     } finally {
       setIsSending(false);
     }
