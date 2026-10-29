@@ -108,18 +108,17 @@ export default function LandingPage({
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 pt-2">
             <button
-              onClick={onOpenSignup}
-              className="w-full sm:w-auto text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-xl shadow-lg shadow-indigo-600/30 transition flex items-center justify-center gap-2"
+              onClick={onOpenLogin}
+              className="w-full sm:w-auto text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-3 rounded-xl shadow-lg shadow-indigo-600/30 transition flex items-center justify-center gap-2"
             >
-              <span>Start Recovering Invoices</span>
+              <span>Sign In to Dashboard</span>
               <ArrowRight className="w-4 h-4" />
             </button>
             <button
-              onClick={onOpenApp}
+              onClick={onOpenSignup}
               className="w-full sm:w-auto text-sm font-medium bg-[#161B22] hover:bg-slate-800 text-slate-200 border border-slate-700/80 px-6 py-3 rounded-xl transition flex items-center justify-center gap-2"
             >
-              <Bot className="w-4 h-4 text-indigo-400" />
-              <span>Explore Live Demo App</span>
+              <span>Create Free Account</span>
             </button>
           </div>
 
@@ -240,10 +239,10 @@ export default function LandingPage({
                 Never sent automatically without your pre-flight confirmation.
               </span>
               <button
-                onClick={onOpenApp}
+                onClick={onOpenLogin}
                 className="text-indigo-400 hover:text-indigo-300 flex items-center gap-1 font-semibold"
               >
-                <span>Try in App</span>
+                <span>Get Started</span>
                 <ChevronRight className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -403,7 +402,6 @@ export default function LandingPage({
           <div className="flex items-center gap-4 text-slate-400">
             <button onClick={onOpenLogin} className="hover:text-white transition">Sign In</button>
             <button onClick={onOpenSignup} className="hover:text-white transition">Sign Up</button>
-            <button onClick={onOpenApp} className="text-indigo-400 hover:underline">Demo App</button>
           </div>
         </div>
       </footer>

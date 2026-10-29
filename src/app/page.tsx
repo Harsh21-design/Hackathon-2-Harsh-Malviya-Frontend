@@ -251,16 +251,16 @@ export default function CRMDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSidebarHovered, setIsSidebarHovered] = useState(false);
 
-  // Landing Page & Auth Modal States
-  const [pageMode, setPageMode] = useState<"app" | "landing">("app");
+  // Landing Page & Auth Modal States (Forces unauthenticated users to see landing page & sign in)
+  const [pageMode, setPageMode] = useState<"app" | "landing">("landing");
   const [authModal, setAuthModal] = useState<null | "login" | "signup">(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
-  // User Workspace Profile
-  const [userProfile, setUserProfile] = useState({
+  // Authenticated User Workspace Profile
+  const [userProfile, setUserProfile] = useState<{ name: string; email: string; company: string }>({
     name: "Harsh Malviya",
-    email: "harsh.malviya@vkaps.com",
-    company: "Nexus Creative Studio",
+    email: "malviyahars210903@gmail.com",
+    company: "Nexus Digital Studio",
   });
 
   // Modals
@@ -878,15 +878,15 @@ export default function CRMDashboard() {
             } rounded-lg bg-slate-900/60 border border-slate-800/80 transition`}
           >
             <div className="w-7 h-7 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[11px] font-semibold text-slate-200 shrink-0">
-              {userProfile.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase() || "HM"}
+              {(userProfile?.name || "Harsh Malviya").split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()}
             </div>
             {isSidebarHovered && (
               <div className="overflow-hidden min-w-0">
                 <div className="text-xs font-medium text-slate-200 truncate">
-                  {userProfile.name}
+                  {userProfile?.name || "Harsh Malviya"}
                 </div>
                 <div className="text-[10px] text-slate-400 truncate">
-                  {userProfile.company}
+                  {userProfile?.company || "Nexus Digital Studio"}
                 </div>
               </div>
             )}
