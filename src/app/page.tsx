@@ -147,9 +147,9 @@ function mapBackendToInvoice(inv: BackendInvoice): Invoice {
     ];
   } else if (inv.invoice_number === "INV-105") {
     lastClientReply = {
-      receivedAt: "2 days ago",
-      message: "Can you re-confirm your current bank IFSC/routing code? Accounts desk flagged a detail mismatch.",
-      intent: "Banking Query / Details Needed",
+      receivedAt: "Yesterday",
+      message: "Hey Harsh, our finance desk approved the payment. We promise to clear the full transfer in 4 days.",
+      intent: "Payment Promise · Clear in 4 Days",
     };
     conversationThread = [
       {
@@ -172,22 +172,22 @@ function mapBackendToInvoice(inv: BackendInvoice): Invoice {
         sender: "agent",
         stage: 2,
         subject: "Re: Invoice INV-105 follow-up",
-        body: "Hi Jamie, following up on our previous note. As the invoice is now 13 days past due, please confirm processing status.",
+        body: "Hi Jamie, following up on our previous note. As the invoice is now past due, please confirm processing status.",
         timestamp: "3 days ago",
       },
       {
         id: "msg-13",
         sender: "client",
-        body: "Can you re-confirm your current bank IFSC/routing code? Accounts desk flagged a detail mismatch.",
-        timestamp: "2 days ago",
-        intent: "Banking Query / Details Needed",
+        body: "Hey Harsh, our finance desk approved the payment. We promise to clear the full transfer in 4 days.",
+        timestamp: "Yesterday",
+        intent: "Payment Promise · Clear in 4 Days",
       },
     ];
   } else if (inv.invoice_number === "INV-108") {
     lastClientReply = {
-      receivedAt: "3 days ago",
-      message: "Finance director was out of town this week. He is reviewing the invoice on Monday.",
-      intent: "Internal Delay Note",
+      receivedAt: "2 days ago",
+      message: "Our scheduled vendor payment run is queued up. You will definitely receive the payment in 8 days.",
+      intent: "Payment Promise · Clear in 8 Days",
     };
     conversationThread = [
       {
@@ -201,9 +201,9 @@ function mapBackendToInvoice(inv: BackendInvoice): Invoice {
       {
         id: "msg-21",
         sender: "client",
-        body: "Finance director was out of town this week. He is reviewing the invoice on Monday.",
-        timestamp: "3 days ago",
-        intent: "Internal Delay Note",
+        body: "Our scheduled vendor payment run is queued up. You will definitely receive the payment in 8 days.",
+        timestamp: "2 days ago",
+        intent: "Payment Promise · Clear in 8 Days",
       },
     ];
   }
