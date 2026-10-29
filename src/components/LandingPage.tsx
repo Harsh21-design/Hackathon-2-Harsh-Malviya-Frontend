@@ -249,6 +249,57 @@ export default function LandingPage({
         </div>
       </section>
 
+      {/* How It Works Section */}
+      <section id="how-it-works" className="py-20 px-6 border-b border-slate-800/60">
+        <div className="max-w-5xl mx-auto space-y-12">
+          <div className="text-center max-w-2xl mx-auto space-y-2">
+            <div className="text-xs font-mono uppercase tracking-wider text-indigo-400 font-semibold">
+              Simple 4-Step Workflow
+            </div>
+            <h2 className="text-3xl font-bold text-white tracking-tight">
+              How RecoverAgent Works
+            </h2>
+            <p className="text-sm text-slate-400">
+              From invoice creation to bank settlement — simple, adaptive, and fully under your control.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="bg-[#161B22] border border-slate-800 rounded-2xl p-6 space-y-3 relative">
+              <div className="text-2xl font-black text-indigo-500/40 font-mono">01</div>
+              <h3 className="font-bold text-white text-base">Track Invoices</h3>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Add your client invoices manually or import via CSV. Set due dates and contact emails in seconds.
+              </p>
+            </div>
+
+            <div className="bg-[#161B22] border border-slate-800 rounded-2xl p-6 space-y-3 relative">
+              <div className="text-2xl font-black text-amber-500/40 font-mono">02</div>
+              <h3 className="font-bold text-white text-base">AI Analyzes Replies</h3>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                When a client responds with promises ("paying Friday") or queries, Gemini AI detects their intent automatically.
+              </p>
+            </div>
+
+            <div className="bg-[#161B22] border border-slate-800 rounded-2xl p-6 space-y-3 relative">
+              <div className="text-2xl font-black text-violet-500/40 font-mono">03</div>
+              <h3 className="font-bold text-white text-base">Review Adaptive Drafts</h3>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                AI generates a polite, reply-tuned follow-up referencing their exact note. You review and approve before sending.
+              </p>
+            </div>
+
+            <div className="bg-[#161B22] border border-slate-800 rounded-2xl p-6 space-y-3 relative">
+              <div className="text-2xl font-black text-emerald-500/40 font-mono">04</div>
+              <h3 className="font-bold text-white text-base">Bank Verification</h3>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                When money reaches your bank, verify it with one click. The invoice is marked Paid and the sequence permanently closes.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Core Features for Freelancers & Agencies */}
       <section id="features" className="py-20 px-6 border-b border-slate-800/60">
         <div className="max-w-5xl mx-auto space-y-12">
@@ -295,112 +346,86 @@ export default function LandingPage({
         </div>
       </section>
 
-      {/* Pricing / Plan for Freelancers */}
-      <section id="pricing" className="py-20 px-6 border-b border-slate-800/60">
-        <div className="max-w-4xl mx-auto space-y-10 text-center">
-          <div className="space-y-2">
-            <h2 className="text-3xl font-bold text-white tracking-tight">
-              Simple, Transparent Pricing
-            </h2>
-            <p className="text-sm text-slate-400">
-              Recover one invoice and the system pays for itself 100x over.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left max-w-2xl mx-auto">
-            {/* Free Starter */}
-            <div className="bg-[#161B22] border border-slate-800 p-6 rounded-2xl space-y-4">
-              <div>
-                <span className="text-xs font-semibold text-indigo-400 uppercase tracking-wider font-mono">
-                  Freelancer Starter
-                </span>
-                <div className="text-3xl font-extrabold text-white mt-1">$0</div>
-                <div className="text-xs text-slate-400">Free forever during hackathon preview</div>
-              </div>
-
-              <ul className="space-y-2 text-xs text-slate-300">
-                <li className="flex items-center gap-2">
-                  <Check className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Up to 10 active tracked invoices</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <Check className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Full 3-Tier AI Follow-up Drafts</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <Check className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Payment verification & Audit trail</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <Check className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>CSV bulk import</span>
-                </li>
-              </ul>
-
-              <button
-                onClick={onOpenSignup}
-                className="w-full text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-white py-2.5 rounded-xl border border-slate-700 transition"
-              >
-                Sign Up Free
-              </button>
-            </div>
-
-            {/* Pro Agency */}
-            <div className="bg-gradient-to-b from-indigo-950/40 to-[#161B22] border-2 border-indigo-500/40 p-6 rounded-2xl space-y-4 relative">
-              <span className="absolute -top-3 right-6 bg-indigo-600 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow">
-                Most Popular
-              </span>
-
-              <div>
-                <span className="text-xs font-semibold text-indigo-300 uppercase tracking-wider font-mono">
-                  Agency & Studio Pro
-                </span>
-                <div className="text-3xl font-extrabold text-white mt-1">$19 <span className="text-sm font-normal text-slate-400">/mo</span></div>
-                <div className="text-xs text-slate-400">For agencies managing high invoice volume</div>
-              </div>
-
-              <ul className="space-y-2 text-xs text-slate-300">
-                <li className="flex items-center gap-2">
-                  <Check className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Unlimited tracked invoices & clients</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <Check className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Custom company sender domain</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <Check className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Direct Resend & Stripe webhooks</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <Check className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Multi-seat agency team login</span>
-                </li>
-              </ul>
-
-              <button
-                onClick={onOpenSignup}
-                className="w-full text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl shadow-lg shadow-indigo-600/30 transition"
-              >
-                Start 14-Day Free Trial
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Footer */}
-      <footer className="py-10 px-6 text-center text-xs text-slate-500 border-t border-slate-800">
-        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-indigo-400" />
-            <span className="font-semibold text-slate-400">RecoverAgent</span>
-            <span>· Built for Hackathon 2</span>
+      <footer className="py-14 px-6 bg-[#0B0E14] border-t border-slate-800/80">
+        <div className="max-w-5xl mx-auto space-y-10">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            {/* Col 1: Brand Info */}
+            <div className="md:col-span-2 space-y-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-md shadow-indigo-600/30">
+                  <ShieldCheck className="w-4 h-4" />
+                </div>
+                <span className="font-bold text-base tracking-tight text-white">
+                  RecoverAgent
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 max-w-sm leading-relaxed">
+                Autonomous, reply-adaptive invoice follow-up and payment recovery system. Helping freelancers and boutique businesses get paid without the awkward chase.
+              </p>
+              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-mono">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span>System Operational · 18 Rules Active</span>
+              </div>
+            </div>
+
+            {/* Col 2: Quick Links */}
+            <div className="space-y-2.5">
+              <div className="text-xs font-semibold text-white tracking-wider uppercase font-mono">
+                Product
+              </div>
+              <ul className="space-y-2 text-xs text-slate-400">
+                <li>
+                  <a href="#how-it-works" className="hover:text-white transition">How It Works</a>
+                </li>
+                <li>
+                  <a href="#preview" className="hover:text-white transition">3-Tier Escalation</a>
+                </li>
+                <li>
+                  <a href="#features" className="hover:text-white transition">Features</a>
+                </li>
+                <li>
+                  <button onClick={onOpenApp} className="hover:text-white transition text-left">
+                    Live Demo Mode
+                  </button>
+                </li>
+              </ul>
+            </div>
+
+            {/* Col 3: Account & Access */}
+            <div className="space-y-2.5">
+              <div className="text-xs font-semibold text-white tracking-wider uppercase font-mono">
+                Access
+              </div>
+              <ul className="space-y-2 text-xs text-slate-400">
+                <li>
+                  <button onClick={onOpenLogin} className="hover:text-white transition text-left">
+                    Sign In
+                  </button>
+                </li>
+                <li>
+                  <button onClick={onOpenSignup} className="hover:text-white transition text-left">
+                    Create Account
+                  </button>
+                </li>
+                <li>
+                  <span className="text-[11px] text-slate-500">FastAPI + Supabase + Gemini</span>
+                </li>
+              </ul>
+            </div>
           </div>
 
-          <div className="flex items-center gap-4 text-slate-400">
-            <button onClick={onOpenLogin} className="hover:text-white transition">Sign In</button>
-            <button onClick={onOpenSignup} className="hover:text-white transition">Sign Up</button>
+          <div className="pt-8 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
+            <div>
+              © 2026 RecoverAgent. All rights reserved.
+            </div>
+            <div className="flex items-center gap-4">
+              <span>Privacy Safe</span>
+              <span>·</span>
+              <span>No Spam Guarantee</span>
+              <span>·</span>
+              <span>Human Bank Verification</span>
+            </div>
           </div>
         </div>
       </footer>

@@ -739,7 +739,7 @@ export default function CRMDashboard() {
   }
 
   return (
-    <div className={`flex h-screen ${isDarkMode ? "bg-[#0D1117] text-slate-100" : "bg-slate-50 text-slate-800"} font-sans antialiased overflow-hidden transition-colors duration-200`}>
+    <div className="flex h-screen bg-[#0D1117] text-slate-100 font-sans antialiased overflow-hidden">
       {/* ========================================================= */}
       {/* HOVER-BASED SMOOTH EXPANDING SIDEBAR                       */}
       {/* ========================================================= */}
@@ -747,22 +747,22 @@ export default function CRMDashboard() {
         onMouseEnter={() => setIsSidebarHovered(true)}
         onMouseLeave={() => setIsSidebarHovered(false)}
         className={`${
-          isSidebarHovered ? "w-64 shadow-xl shadow-black/40" : "w-16"
-        } border-r ${isDarkMode ? "border-slate-800/90 bg-[#161B22]/98" : "border-slate-200 bg-white"} backdrop-blur-md flex flex-col justify-between transition-[width] duration-200 ease-out z-40 shrink-0 select-none`}
+          isSidebarHovered ? "w-52 shadow-xl shadow-black/40" : "w-14"
+        } border-r border-slate-800/90 bg-[#161B22]/98 backdrop-blur-md flex flex-col justify-between transition-[width] duration-200 ease-out z-40 shrink-0 select-none`}
       >
         <div>
           {/* Logo Brand Header */}
-          <div className={`h-16 border-b ${isDarkMode ? "border-slate-800/80" : "border-slate-200"} flex items-center ${isSidebarHovered ? "px-4 justify-start gap-3" : "justify-center"}`}>
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-500 via-teal-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-teal-500/20 shrink-0">
-              <ShieldCheck className="w-5 h-5 text-white" />
+          <div className={`h-14 border-b border-slate-800/80 flex items-center ${isSidebarHovered ? "px-3.5 justify-start gap-2.5" : "justify-center"}`}>
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-md shadow-indigo-600/30 shrink-0">
+              <ShieldCheck className="w-4 h-4" />
             </div>
             {isSidebarHovered && (
               <div className="leading-tight truncate animate-in fade-in duration-150">
-                <span className={`font-black text-xs tracking-tight ${isDarkMode ? "text-white" : "text-slate-900"} block truncate uppercase`}>
-                  AI Payment Recovery Agent
+                <span className="font-bold text-sm tracking-tight text-white block truncate">
+                  RecoverAgent
                 </span>
-                <span className="text-[9px] text-teal-400 font-mono tracking-wider block truncate mt-0.5">
-                  Automated Invoice Follow-Up & Tracking
+                <span className="text-[10px] text-slate-400 font-mono tracking-wide uppercase truncate block">
+                  Payment Follow-up
                 </span>
               </div>
             )}
@@ -951,30 +951,21 @@ export default function CRMDashboard() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  {/* Theme Toggle Button */}
-                  <button
-                    onClick={() => setIsDarkMode(!isDarkMode)}
-                    className={`p-2 rounded-xl border ${isDarkMode ? "border-slate-800 bg-[#161B22] text-slate-300 hover:text-white" : "border-slate-300 bg-white text-slate-700 hover:text-black"} transition shadow-sm`}
-                    title="Toggle Dark/Light Mode"
-                  >
-                    {isDarkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-600" />}
-                  </button>
-
                   {/* Notification Center Popover */}
                   <div className="relative">
                     <button
                       onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-                      className={`relative p-2 rounded-xl border ${isDarkMode ? "border-slate-800 bg-[#161B22] text-slate-300 hover:text-white" : "border-slate-300 bg-white text-slate-700 hover:text-black"} transition shadow-sm`}
+                      className="relative p-1.5 rounded-lg border border-slate-800 bg-[#161B22] text-slate-300 hover:text-white transition shadow-sm"
                       title="Incoming Client Emails & Notifications"
                     >
                       <Bell className="w-4 h-4" />
                       {notifications.some(n => !n.read) && (
-                        <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
+                        <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
                       )}
                     </button>
 
                     {isNotificationsOpen && (
-                      <div className={`absolute right-0 mt-2 w-80 rounded-2xl border ${isDarkMode ? "bg-[#161B22] border-slate-800" : "bg-white border-slate-200"} shadow-2xl p-4 z-50 space-y-3`}>
+                      <div className="absolute right-0 mt-2 w-80 rounded-2xl border bg-[#161B22] border-slate-800 shadow-2xl p-4 z-50 space-y-3">
                         <div className="flex items-center justify-between pb-2 border-b border-slate-800/60">
                           <div className="flex items-center gap-1.5">
                             <Bell className="w-3.5 h-3.5 text-indigo-400" />
@@ -994,9 +985,7 @@ export default function CRMDashboard() {
                           {notifications.map((n) => (
                             <div
                               key={n.id}
-                              className={`p-2.5 rounded-xl border text-xs space-y-0.5 transition ${
-                                isDarkMode ? "bg-[#0D1117] border-slate-800/80 hover:border-slate-700" : "bg-slate-50 border-slate-200"
-                              }`}
+                              className="p-2.5 rounded-xl border text-xs space-y-0.5 transition bg-[#0D1117] border-slate-800/80 hover:border-slate-700"
                             >
                               <div className="flex items-center justify-between">
                                 <span className="font-semibold text-white">{n.title}</span>
@@ -1012,7 +1001,7 @@ export default function CRMDashboard() {
 
                   <button
                     onClick={reloadData}
-                    className={`p-2 rounded-xl border ${isDarkMode ? "border-slate-800 bg-[#161B22] text-slate-400 hover:text-white" : "border-slate-300 bg-white text-slate-700 hover:text-black"} transition shadow-sm`}
+                    className="p-1.5 rounded-lg border border-slate-800 bg-[#161B22] text-slate-400 hover:text-white transition"
                     title="Refresh data"
                   >
                     <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
