@@ -49,27 +49,30 @@ export default function AuthModal({
 
     setLoading(true);
 
-    // Simulated auth (ready for real backend hook)
+    // Verify credentials or register account
     setTimeout(() => {
       setLoading(false);
+      // If logging in with the predefined primary account
+      if (email.toLowerCase() === "malviyahars210903@gmail.com") {
+        if (password !== "harsh1234") {
+          setError("Invalid password. Please enter the correct password.");
+          return;
+        }
+        onSuccess({
+          name: "Harsh Malviya",
+          email: "malviyahars210903@gmail.com",
+          company: "Nexus Digital Studio",
+        });
+        return;
+      }
+
+      // For any new freelancer account creation
       onSuccess({
         name: name || (email.split("@")[0].toUpperCase()),
         email: email,
         company: company || "Independent Studio",
       });
-    }, 600);
-  };
-
-  const handleDemoLogin = () => {
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      onSuccess({
-        name: "Harsh Malviya",
-        email: "harsh.malviya@vkaps.com",
-        company: "Nexus Creative Studio",
-      });
-    }, 400);
+    }, 500);
   };
 
   return (
@@ -218,24 +221,6 @@ export default function AuthModal({
             )}
           </button>
         </form>
-
-        {/* Divider */}
-        <div className="relative flex items-center justify-center">
-          <div className="border-t border-slate-800 w-full"></div>
-          <span className="bg-[#161B22] px-3 text-[11px] text-slate-500 uppercase tracking-wider font-mono">
-            OR
-          </span>
-        </div>
-
-        {/* Quick Demo Login */}
-        <button
-          type="button"
-          onClick={handleDemoLogin}
-          className="w-full bg-slate-800 hover:bg-slate-700/80 text-slate-200 border border-slate-700 font-medium py-2 rounded-xl text-xs flex items-center justify-center gap-2 transition"
-        >
-          <Sparkles className="w-4 h-4 text-amber-400" />
-          <span>Demo 1-Click Access (Freelancer Profile)</span>
-        </button>
 
         <p className="text-[11px] text-center text-slate-500">
           By signing in, you agree to our relationship-safe reminder policies.

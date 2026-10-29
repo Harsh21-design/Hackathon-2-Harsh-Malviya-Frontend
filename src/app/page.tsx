@@ -49,6 +49,16 @@ export type ViewMode =
   | "invoice_detail"
   | "review_draft";
 
+export interface MessageHistoryItem {
+  id: string;
+  sender: "agent" | "client";
+  stage?: 1 | 2 | 3;
+  subject?: string;
+  body: string;
+  timestamp: string;
+  intent?: string;
+}
+
 export interface Invoice {
   id: string;
   invoiceNumber: string;
@@ -70,6 +80,7 @@ export interface Invoice {
     message: string;
     intent: string; // e.g. "Promise: 25 Oct" | "Delay Reason" | "Query"
   };
+  conversationThread?: MessageHistoryItem[];
 }
 
 export interface ActivityEvent {
@@ -104,26 +115,94 @@ function mapBackendToInvoice(inv: BackendInvoice): Invoice {
     statusUi = "Overdue";
   }
 
-  // Contextual last client reply mock for demonstration/real sync
+  // Contextual thread & last client reply mock for demonstration/real sync
   let lastClientReply: Invoice["lastClientReply"] = undefined;
+  let conversationThread: MessageHistoryItem[] = [];
+
   if (inv.invoice_number === "INV-103") {
     lastClientReply = {
       receivedAt: "Yesterday, 4:15 PM",
       message: "Hey Harsh, waiting on our enterprise client settlement. Will clear this by 22 Oct for sure.",
       intent: "Promise: 22 Oct 2026",
     };
+    conversationThread = [
+      {
+        id: "msg-1",
+        sender: "agent",
+        stage: 1,
+        subject: "Friendly Reminder: Invoice INV-103 ($2,900)",
+        body: "Hi Riley, hope your week is going well. Just a quick friendly reminder regarding invoice INV-103 for $2,900 due on 22 Oct. Please let us know if everything is in order.",
+        timestamp: "3 days ago, 11:30 AM",
+      },
+      {
+        id: "msg-2",
+        sender: "client",
+        body: "Hey Harsh, waiting on our enterprise client settlement. Will clear this by 22 Oct for sure.",
+        timestamp: "Yesterday, 4:15 PM",
+        intent: "Promise: 22 Oct 2026",
+      },
+    ];
   } else if (inv.invoice_number === "INV-105") {
     lastClientReply = {
       receivedAt: "2 days ago",
       message: "Can you re-confirm your current bank IFSC/routing code? Accounts desk flagged a detail mismatch.",
       intent: "Banking Query / Details Needed",
     };
+    conversationThread = [
+      {
+        id: "msg-10",
+        sender: "agent",
+        stage: 1,
+        subject: "Friendly Reminder: Invoice INV-105 ($4,400)",
+        body: "Hi Jamie, gentle note regarding invoice INV-105 for $4,400 which reached its due date on 15 Oct.",
+        timestamp: "6 days ago",
+      },
+      {
+        id: "msg-11",
+        sender: "client",
+        body: "Checking with our accounts team on the payment schedule.",
+        timestamp: "4 days ago",
+        intent: "Acknowledgment",
+      },
+      {
+        id: "msg-12",
+        sender: "agent",
+        stage: 2,
+        subject: "Re: Invoice INV-105 follow-up",
+        body: "Hi Jamie, following up on our previous note. As the invoice is now 13 days past due, please confirm processing status.",
+        timestamp: "3 days ago",
+      },
+      {
+        id: "msg-13",
+        sender: "client",
+        body: "Can you re-confirm your current bank IFSC/routing code? Accounts desk flagged a detail mismatch.",
+        timestamp: "2 days ago",
+        intent: "Banking Query / Details Needed",
+      },
+    ];
   } else if (inv.invoice_number === "INV-108") {
     lastClientReply = {
       receivedAt: "3 days ago",
       message: "Finance director was out of town this week. He is reviewing the invoice on Monday.",
       intent: "Internal Delay Note",
     };
+    conversationThread = [
+      {
+        id: "msg-20",
+        sender: "agent",
+        stage: 1,
+        subject: "Gentle reminder: Invoice INV-108 payment",
+        body: "Hi Avery, just a quick friendly note regarding invoice INV-108 for $2,500 due on 20 Oct.",
+        timestamp: "4 days ago",
+      },
+      {
+        id: "msg-21",
+        sender: "client",
+        body: "Finance director was out of town this week. He is reviewing the invoice on Monday.",
+        timestamp: "3 days ago",
+        intent: "Internal Delay Note",
+      },
+    ];
   }
 
   return {
@@ -142,6 +221,7 @@ function mapBackendToInvoice(inv: BackendInvoice): Invoice {
     reminder3: inv.reminder_count >= 3,
     paymentVerified: isPaid,
     lastClientReply,
+    conversationThread,
   };
 }
 
@@ -326,8 +406,7 @@ export default function CRMDashboard() {
       setDraftSubject(draft.subject);
       setDraftBody(draft.body);
     } catch (err: any) {
-      console.error(err);
-      showToast(err.message || "Generating reply-adaptive draft with Gemini...");
+      console.warn("Backend draft generation warning:", err.message);
       
       // Intelligent reply-adaptive draft generation based on client's last response
       const clientNote = target.lastClientReply;
@@ -1724,6 +1803,70 @@ export default function CRMDashboard() {
                         </div>
                       )}
                     </div>
+                  </div>
+                </div>
+
+                {/* Full Email Conversation History Thread */}
+                <div className="md:col-span-2 bg-[#161B22] border border-slate-800 rounded-xl p-5 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="font-semibold text-white text-sm flex items-center gap-2">
+                      <Mail className="w-4 h-4 text-indigo-400" />
+                      <span>Communication & Email History Thread</span>
+                    </div>
+                    <span className="text-[10px] text-slate-400 font-mono">
+                      {selectedInvoice.conversationThread?.length || 0} messages logged
+                    </span>
+                  </div>
+
+                  <div className="space-y-3 pt-1">
+                    {selectedInvoice.conversationThread && selectedInvoice.conversationThread.length > 0 ? (
+                      selectedInvoice.conversationThread.map((msg) => (
+                        <div
+                          key={msg.id}
+                          className={`p-3.5 rounded-xl border text-xs space-y-1.5 transition ${
+                            msg.sender === "agent"
+                              ? "bg-[#0D1117] border-slate-800 ml-4 border-l-2 border-l-indigo-500"
+                              : "bg-indigo-950/20 border-indigo-500/30 mr-4 border-l-2 border-l-amber-500"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                                  msg.sender === "agent"
+                                    ? "bg-indigo-600/20 text-indigo-300 border border-indigo-500/30"
+                                    : "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                                }`}
+                              >
+                                {msg.sender === "agent" ? `AI Reminder R${msg.stage}` : "Client Response"}
+                              </span>
+                              {msg.intent && (
+                                <span className="text-[10px] text-slate-400">
+                                  Intent: <b className="text-slate-300">{msg.intent}</b>
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-[10px] text-slate-500 font-mono">
+                              {msg.timestamp}
+                            </span>
+                          </div>
+
+                          {msg.subject && (
+                            <div className="font-semibold text-slate-200 text-xs">
+                              Subject: {msg.subject}
+                            </div>
+                          )}
+
+                          <p className="text-slate-300 leading-relaxed whitespace-pre-line text-[11px]">
+                            {msg.body}
+                          </p>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-4 bg-[#0D1117] border border-slate-800/80 rounded-xl text-center text-xs text-slate-500">
+                        No email communications recorded yet for this invoice.
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
