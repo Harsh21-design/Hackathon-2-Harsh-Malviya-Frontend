@@ -18,7 +18,9 @@ import {
   FileText,
   Mail,
   Send,
-  Building
+  Building,
+  Check,
+  FileSpreadsheet
 } from "lucide-react";
 
 interface LandingPageProps {
@@ -408,3 +410,4 @@ export default function LandingPage({
     </div>
   );
 }
+

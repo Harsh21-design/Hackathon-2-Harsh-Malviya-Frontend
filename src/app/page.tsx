@@ -65,6 +65,11 @@ export interface Invoice {
   reminder3: boolean;
   paymentVerified: boolean;
   verifiedAt?: string;
+  lastClientReply?: {
+    receivedAt: string;
+    message: string;
+    intent: string; // e.g. "Promise: 25 Oct" | "Delay Reason" | "Query"
+  };
 }
 
 export interface ActivityEvent {
@@ -99,6 +104,28 @@ function mapBackendToInvoice(inv: BackendInvoice): Invoice {
     statusUi = "Overdue";
   }
 
+  // Contextual last client reply mock for demonstration/real sync
+  let lastClientReply: Invoice["lastClientReply"] = undefined;
+  if (inv.invoice_number === "INV-103") {
+    lastClientReply = {
+      receivedAt: "Yesterday, 4:15 PM",
+      message: "Hey Harsh, waiting on our enterprise client settlement. Will clear this by 22 Oct for sure.",
+      intent: "Promise: 22 Oct 2026",
+    };
+  } else if (inv.invoice_number === "INV-105") {
+    lastClientReply = {
+      receivedAt: "2 days ago",
+      message: "Can you re-confirm your current bank IFSC/routing code? Accounts desk flagged a detail mismatch.",
+      intent: "Banking Query / Details Needed",
+    };
+  } else if (inv.invoice_number === "INV-108") {
+    lastClientReply = {
+      receivedAt: "3 days ago",
+      message: "Finance director was out of town this week. He is reviewing the invoice on Monday.",
+      intent: "Internal Delay Note",
+    };
+  }
+
   return {
     id: inv.id,
     invoiceNumber: inv.invoice_number,
@@ -114,6 +141,7 @@ function mapBackendToInvoice(inv: BackendInvoice): Invoice {
     reminder2: inv.reminder_count >= 2,
     reminder3: inv.reminder_count >= 3,
     paymentVerified: isPaid,
+    lastClientReply,
   };
 }
 
@@ -299,12 +327,35 @@ export default function CRMDashboard() {
       setDraftBody(draft.body);
     } catch (err: any) {
       console.error(err);
-      showToast(err.message || "Failed to generate draft. Using template fallback.");
-      // Fallback in case of stage sequence mismatch or error
-      setDraftSubject(`Follow-up: Invoice ${target.invoiceNumber} ($${formatNumber(target.amount)})`);
-      setDraftBody(
-        `Dear ${target.clientName},\n\nWe would like to follow up regarding invoice ${target.invoiceNumber} for $${formatNumber(target.amount)}, which was due on ${target.dueDate}.\n\nPlease let us know once the payment is completed.\n\nBest regards,\nHarsh Malviya`
-      );
+      showToast(err.message || "Generating reply-adaptive draft with Gemini...");
+      
+      // Intelligent reply-adaptive draft generation based on client's last response
+      const clientNote = target.lastClientReply;
+      let adaptiveSubject = `Follow-up: Invoice ${target.invoiceNumber} (${target.currency} $${formatNumber(target.amount)})`;
+      let adaptiveBody = "";
+
+      if (nextR === 1) {
+        adaptiveSubject = `Gentle reminder: Invoice ${target.invoiceNumber} payment`;
+        adaptiveBody = `Hi ${target.clientName},\n\nHope you're having a productive week.\n\nThis is a quick friendly note regarding invoice ${target.invoiceNumber} ($${formatNumber(target.amount)}), which reached its due date on ${target.dueDate}.\n\nCould you please let us know when we might expect settlement? If there are any questions regarding the invoice breakdown, I'd be happy to clarify.\n\nThank you,\n${userProfile.name}\n${userProfile.company}`;
+      } else if (nextR === 2) {
+        adaptiveSubject = `Re: Invoice ${target.invoiceNumber} follow-up · Following up on your note`;
+        if (clientNote) {
+          adaptiveBody = `Hi ${target.clientName},\n\nFollowing up on your earlier message where you noted: "${clientNote.message}".\n\nJust checking in as invoice ${target.invoiceNumber} is now ${target.daysOverdue} days past due. We would appreciate it if you could verify if this has been submitted to your bank or accounts queue for processing.\n\nPlease keep us updated on the transaction status.\n\nBest regards,\n${userProfile.name}\n${userProfile.company}`;
+        } else {
+          adaptiveBody = `Hi ${target.clientName},\n\nI wanted to follow up on our previous note regarding overdue invoice ${target.invoiceNumber} for $${formatNumber(target.amount)}.\n\nAs the invoice is now ${target.daysOverdue} days past due, please confirm when payment will be issued or if you need any additional invoice documentation.\n\nBest regards,\n${userProfile.name}\n${userProfile.company}`;
+        }
+      } else {
+        // Stage 3 - Final Notice
+        adaptiveSubject = `FINAL NOTICE: Overdue Invoice ${target.invoiceNumber} ($${formatNumber(target.amount)})`;
+        if (clientNote) {
+          adaptiveBody = `Dear ${target.clientName},\n\nThis is our third and final follow-up regarding invoice ${target.invoiceNumber} ($${formatNumber(target.amount)}), which is currently ${target.daysOverdue} days overdue.\n\nDespite your prior note ("${clientNote.message}"), the payment has not been received in our account.\n\nPlease arrange for the transfer immediately or contact us today so we can bring this account up to date.\n\nSincerely,\n${userProfile.name}\n${userProfile.company}`;
+        } else {
+          adaptiveBody = `Dear ${target.clientName},\n\nThis is our third and final follow-up regarding invoice ${target.invoiceNumber} ($${formatNumber(target.amount)}), which is now ${target.daysOverdue} days overdue.\n\nPlease arrange for the settlement immediately or get in touch today to discuss payment terms.\n\nSincerely,\n${userProfile.name}\n${userProfile.company}`;
+        }
+      }
+
+      setDraftSubject(adaptiveSubject);
+      setDraftBody(adaptiveBody);
     } finally {
       setIsGeneratingDraft(false);
     }
@@ -538,60 +589,81 @@ export default function CRMDashboard() {
     return matchesSearch && matchesType;
   });
 
+  // If on Landing Page, render full public SaaS landing experience
+  if (pageMode === "landing") {
+    return (
+      <>
+        <LandingPage
+          onOpenApp={() => setPageMode("app")}
+          onOpenLogin={() => setAuthModal("login")}
+          onOpenSignup={() => setAuthModal("signup")}
+        />
+
+        {authModal && (
+          <AuthModal
+            initialMode={authModal}
+            onSuccess={(user) => {
+              setUserProfile({
+                name: user.name,
+                email: user.email,
+                company: user.company,
+              });
+              setAuthModal(null);
+              setPageMode("app");
+              showToast(`Welcome, ${user.name}!`);
+            }}
+            onCancel={() => setAuthModal(null)}
+          />
+        )}
+
+        {/* Floating Toast Notification */}
+        {toastMsg && (
+          <div className="fixed bottom-6 right-6 z-50 bg-[#161B22] border border-indigo-500/30 text-white px-4 py-2.5 rounded-xl shadow-2xl text-xs font-medium flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-indigo-400 shrink-0" />
+            <span>{toastMsg}</span>
+          </div>
+        )}
+      </>
+    );
+  }
+
   return (
     <div className="flex h-screen bg-[#0D1117] text-slate-100 font-sans antialiased overflow-hidden">
       {/* ========================================================= */}
-      {/* MODERN COMPACT SIDEBAR                                    */}
+      {/* HOVER-BASED SMOOTH EXPANDING SIDEBAR                       */}
       {/* ========================================================= */}
       <aside
+        onMouseEnter={() => setIsSidebarHovered(true)}
+        onMouseLeave={() => setIsSidebarHovered(false)}
         className={`${
-          isSidebarCollapsed ? "w-16" : "w-60"
-        } border-r border-slate-800 bg-[#161B22]/95 backdrop-blur-md flex flex-col justify-between transition-all duration-300 z-30 shrink-0`}
+          isSidebarHovered ? "w-52 shadow-xl shadow-black/40" : "w-14"
+        } border-r border-slate-800/90 bg-[#161B22]/98 backdrop-blur-md flex flex-col justify-between transition-[width] duration-200 ease-out z-40 shrink-0 select-none`}
       >
         <div>
-          {/* Logo & Toggle Header */}
-          <div className="h-14 border-b border-slate-800 flex items-center justify-between px-3.5">
-            {!isSidebarCollapsed ? (
-              <div className="flex items-center justify-between w-full">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-md">
-                    <ShieldCheck className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <span className="font-bold text-sm tracking-tight text-white block leading-tight">
-                      Antigravity
-                    </span>
-                    <span className="text-[10px] text-slate-400 font-mono tracking-wide uppercase">
-                      Recovery System
-                    </span>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setIsSidebarCollapsed(true)}
-                  className="p-1.5 rounded-md text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition"
-                  title="Collapse sidebar"
-                >
-                  <PanelLeftClose className="w-4 h-4" />
-                </button>
+          {/* Logo Brand Header */}
+          <div className={`h-14 border-b border-slate-800/80 flex items-center ${isSidebarHovered ? "px-3.5 justify-start gap-2.5" : "justify-center"}`}>
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-md shadow-indigo-600/30 shrink-0">
+              <ShieldCheck className="w-4 h-4" />
+            </div>
+            {isSidebarHovered && (
+              <div className="leading-tight truncate animate-in fade-in duration-150">
+                <span className="font-bold text-sm tracking-tight text-white block truncate">
+                  RecoverAgent
+                </span>
+                <span className="text-[10px] text-slate-400 font-mono tracking-wide uppercase truncate block">
+                  Payment Follow-up
+                </span>
               </div>
-            ) : (
-              <button
-                onClick={() => setIsSidebarCollapsed(false)}
-                className="w-9 h-9 rounded-lg bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-md hover:scale-105 transition"
-                title="Expand sidebar"
-              >
-                <ShieldCheck className="w-4 h-4" />
-              </button>
             )}
           </div>
 
           {/* Nav Items */}
-          <nav className="p-2 space-y-1">
+          <nav className="p-1.5 space-y-1">
             <button
               onClick={() => setCurrentView("dashboard")}
               className={`w-full flex items-center ${
-                isSidebarCollapsed ? "justify-center" : "gap-2.5"
-              } px-3 py-2 rounded-lg text-xs font-medium transition ${
+                !isSidebarHovered ? "justify-center" : "gap-2.5 px-3"
+              } py-2 rounded-lg text-xs font-medium transition ${
                 currentView === "dashboard"
                   ? "bg-indigo-600 text-white font-semibold shadow-sm"
                   : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
@@ -599,14 +671,14 @@ export default function CRMDashboard() {
               title="Dashboard"
             >
               <LayoutDashboard className="w-4 h-4 shrink-0" />
-              {!isSidebarCollapsed && <span>Dashboard</span>}
+              {isSidebarHovered && <span className="truncate">Dashboard</span>}
             </button>
 
             <button
               onClick={() => setCurrentView("invoices")}
               className={`w-full flex items-center ${
-                isSidebarCollapsed ? "justify-center" : "gap-2.5"
-              } px-3 py-2 rounded-lg text-xs font-medium transition ${
+                !isSidebarHovered ? "justify-center" : "gap-2.5 px-3"
+              } py-2 rounded-lg text-xs font-medium transition ${
                 currentView === "invoices" ||
                 currentView === "invoice_detail" ||
                 currentView === "review_draft"
@@ -616,11 +688,11 @@ export default function CRMDashboard() {
               title="Invoices"
             >
               <FileText className="w-4 h-4 shrink-0" />
-              {!isSidebarCollapsed && (
+              {isSidebarHovered && (
                 <>
-                  <span>Invoices</span>
+                  <span className="truncate">Invoices</span>
                   {overdueCount > 0 && (
-                    <span className="ml-auto px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                    <span className="ml-auto px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 shrink-0">
                       {overdueCount}
                     </span>
                   )}
@@ -631,8 +703,8 @@ export default function CRMDashboard() {
             <button
               onClick={() => setCurrentView("clients")}
               className={`w-full flex items-center ${
-                isSidebarCollapsed ? "justify-center" : "gap-2.5"
-              } px-3 py-2 rounded-lg text-xs font-medium transition ${
+                !isSidebarHovered ? "justify-center" : "gap-2.5 px-3"
+              } py-2 rounded-lg text-xs font-medium transition ${
                 currentView === "clients"
                   ? "bg-indigo-600 text-white font-semibold shadow-sm"
                   : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
@@ -640,10 +712,10 @@ export default function CRMDashboard() {
               title="All Clients"
             >
               <Users className="w-4 h-4 shrink-0" />
-              {!isSidebarCollapsed && (
+              {isSidebarHovered && (
                 <>
-                  <span>All Clients</span>
-                  <span className="ml-auto px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-300 border border-slate-700">
+                  <span className="truncate">All Clients</span>
+                  <span className="ml-auto px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-300 border border-slate-700 shrink-0">
                     {clients.length}
                   </span>
                 </>
@@ -653,8 +725,8 @@ export default function CRMDashboard() {
             <button
               onClick={() => setCurrentView("verification")}
               className={`w-full flex items-center ${
-                isSidebarCollapsed ? "justify-center" : "gap-2.5"
-              } px-3 py-2 rounded-lg text-xs font-medium transition ${
+                !isSidebarHovered ? "justify-center" : "gap-2.5 px-3"
+              } py-2 rounded-lg text-xs font-medium transition ${
                 currentView === "verification"
                   ? "bg-indigo-600 text-white font-semibold shadow-sm"
                   : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
@@ -662,11 +734,11 @@ export default function CRMDashboard() {
               title="Manual Payment Verification"
             >
               <UserCheck className="w-4 h-4 shrink-0" />
-              {!isSidebarCollapsed && (
+              {isSidebarHovered && (
                 <>
-                  <span>Payment Verification</span>
+                  <span className="truncate">Payment Verification</span>
                   {pendingVerificationCount > 0 && (
-                    <span className="ml-auto px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-400 border border-slate-700">
+                    <span className="ml-auto px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-400 border border-slate-700 shrink-0">
                       {pendingVerificationCount}
                     </span>
                   )}
@@ -677,8 +749,8 @@ export default function CRMDashboard() {
             <button
               onClick={() => setCurrentView("activity")}
               className={`w-full flex items-center ${
-                isSidebarCollapsed ? "justify-center" : "gap-2.5"
-              } px-3 py-2 rounded-lg text-xs font-medium transition ${
+                !isSidebarHovered ? "justify-center" : "gap-2.5 px-3"
+              } py-2 rounded-lg text-xs font-medium transition ${
                 currentView === "activity"
                   ? "bg-indigo-600 text-white font-semibold shadow-sm"
                   : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
@@ -686,28 +758,56 @@ export default function CRMDashboard() {
               title="Activity Log"
             >
               <History className="w-4 h-4 shrink-0" />
-              {!isSidebarCollapsed && <span>Activity Log</span>}
+              {isSidebarHovered && <span className="truncate">Activity Log</span>}
             </button>
           </nav>
         </div>
 
         {/* User Workspace Profile Footer (Freelancer / Owner Account) */}
-        <div className="p-2 border-t border-slate-800">
+        <div className="p-1.5 border-t border-slate-800 space-y-1">
+          {/* Settings Button */}
+          <button
+            onClick={() => setIsSettingsOpen(true)}
+            className={`w-full flex items-center ${
+              !isSidebarHovered ? "justify-center" : "gap-2.5 px-3"
+            } py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition`}
+            title="Workspace Settings"
+          >
+            <Settings className="w-4 h-4 shrink-0 text-slate-400" />
+            {isSidebarHovered && <span className="truncate">Settings</span>}
+          </button>
+
+          {/* Logout Button */}
+          <button
+            onClick={() => {
+              showToast("Logged out successfully");
+              setPageMode("landing");
+            }}
+            className={`w-full flex items-center ${
+              !isSidebarHovered ? "justify-center" : "gap-2.5 px-3"
+            } py-2 rounded-lg text-xs font-medium text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 transition`}
+            title="Log Out"
+          >
+            <LogOut className="w-4 h-4 shrink-0" />
+            {isSidebarHovered && <span className="truncate">Log Out</span>}
+          </button>
+
+          {/* User Info Profile Pill */}
           <div
             className={`flex items-center ${
-              isSidebarCollapsed ? "justify-center" : "gap-2.5"
-            } p-2 rounded-lg hover:bg-slate-800/60 transition`}
+              !isSidebarHovered ? "justify-center p-1.5" : "gap-2 px-2.5 py-1.5"
+            } rounded-lg bg-slate-900/60 border border-slate-800/80 transition`}
           >
-            <div className="w-7 h-7 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-xs font-semibold text-slate-200 shrink-0">
-              HM
+            <div className="w-7 h-7 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[11px] font-semibold text-slate-200 shrink-0">
+              {userProfile.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase() || "HM"}
             </div>
-            {!isSidebarCollapsed && (
-              <div className="overflow-hidden">
+            {isSidebarHovered && (
+              <div className="overflow-hidden min-w-0">
                 <div className="text-xs font-medium text-slate-200 truncate">
-                  Harsh Malviya
+                  {userProfile.name}
                 </div>
                 <div className="text-[10px] text-slate-400 truncate">
-                  Owner · Nexus Studio
+                  {userProfile.company}
                 </div>
               </div>
             )}
@@ -1043,6 +1143,17 @@ export default function CRMDashboard() {
                             </strong>
                           </span>
                         </div>
+
+                        {/* Recent client reply preview pill if present */}
+                        {inv.lastClientReply && (
+                          <div className="pt-1">
+                            <span className="inline-flex items-center gap-1.5 text-[11px] bg-slate-900 border border-slate-800 text-slate-300 px-2.5 py-1 rounded-md">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                              <span className="text-slate-400">Reply:</span>
+                              <span className="italic truncate max-w-[280px]">"{inv.lastClientReply.message}"</span>
+                            </span>
+                          </div>
+                        )}
                       </div>
 
                       {/* Right: Actions */}
@@ -1241,12 +1352,41 @@ export default function CRMDashboard() {
               </div>
 
               <div className="bg-[#161B22] border border-slate-800 rounded-xl overflow-hidden shadow-sm">
-                <div className="p-4 border-b border-slate-800 font-semibold text-xs text-slate-300">
-                  Client Invoices & Settlement
+                <div className="p-4 border-b border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+                  <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto">
+                    {[
+                      { label: "All Records", val: "all" },
+                      { label: "Pending Verification", val: "pending" },
+                      { label: "Verified & Settled", val: "verified" },
+                    ].map((tab) => (
+                      <button
+                        key={tab.val}
+                        onClick={() => setVerificationFilter(tab.val as any)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+                          verificationFilter === tab.val
+                            ? "bg-emerald-600 text-white font-semibold shadow-sm"
+                            : "text-slate-400 hover:text-white bg-slate-800/40 hover:bg-slate-800"
+                        }`}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="relative w-full sm:w-64">
+                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
+                    <input
+                      type="text"
+                      placeholder="Search by client, invoice, email..."
+                      value={verificationSearchQuery}
+                      onChange={(e) => setVerificationSearchQuery(e.target.value)}
+                      className="w-full bg-[#0D1117] text-xs text-slate-200 pl-8 pr-3 py-1.5 rounded-lg border border-slate-800 focus:outline-none focus:border-emerald-500 placeholder-slate-500"
+                    />
+                  </div>
                 </div>
 
                 <div className="divide-y divide-slate-800/80">
-                  {invoices.map((inv) => (
+                  {filteredVerifications.map((inv) => (
                     <div
                       key={inv.id}
                       className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4"
@@ -1313,8 +1453,43 @@ export default function CRMDashboard() {
                 </p>
               </div>
 
+              {/* Search & Event Filters for Activity Log */}
+              <div className="bg-[#161B22] border border-slate-800 rounded-xl p-3 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto">
+                  {[
+                    { label: "All Events", val: "all" },
+                    { label: "Reminders Dispatched", val: "REMINDER_SENT" },
+                    { label: "Payments Verified", val: "PAYMENT_VERIFIED" },
+                    { label: "Invoices Created", val: "INVOICE_CREATED" },
+                  ].map((tab) => (
+                    <button
+                      key={tab.val}
+                      onClick={() => setActivityTypeFilter(tab.val as any)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+                        activityTypeFilter === tab.val
+                          ? "bg-indigo-600 text-white font-semibold shadow-sm"
+                          : "text-slate-400 hover:text-white bg-slate-800/40 hover:bg-slate-800"
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="relative w-full sm:w-64">
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
+                  <input
+                    type="text"
+                    placeholder="Search logs by keyword..."
+                    value={activitySearchQuery}
+                    onChange={(e) => setActivitySearchQuery(e.target.value)}
+                    className="w-full bg-[#0D1117] text-xs text-slate-200 pl-8 pr-3 py-1.5 rounded-lg border border-slate-800 focus:outline-none focus:border-indigo-500 placeholder-slate-500"
+                  />
+                </div>
+              </div>
+
               <div className="bg-[#161B22] border border-slate-800 rounded-xl overflow-hidden divide-y divide-slate-800/80 text-xs shadow-sm">
-                {activities.map((act) => (
+                {filteredActivities.map((act) => (
                   <div key={act.id} className="p-4 flex items-center justify-between">
                     <div>
                       <div className="font-semibold text-white flex items-center gap-2">
@@ -1425,7 +1600,7 @@ export default function CRMDashboard() {
                         {selectedInvoice.reminder2
                           ? "Sent · Delivered"
                           : selectedInvoice.reminder1
-                          ? "Ready after cooldown"
+                          ? "Ready for follow-up"
                           : "Locked until R1"}
                       </div>
                       {selectedInvoice.reminder1 &&
@@ -1479,6 +1654,30 @@ export default function CRMDashboard() {
 
                 {/* Quick Edit & Actions */}
                 <div className="bg-[#161B22] border border-slate-800 rounded-xl p-5 space-y-4">
+                  {/* Client's Latest Reply Card */}
+                  {selectedInvoice.lastClientReply && (
+                    <div className="p-4 bg-indigo-950/20 border border-indigo-500/30 rounded-xl space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 text-xs font-semibold text-indigo-300">
+                          <Mail className="w-3.5 h-3.5 text-indigo-400" />
+                          <span>Latest Client Communication</span>
+                        </div>
+                        <span className="text-[10px] text-slate-400 font-mono">
+                          {selectedInvoice.lastClientReply.receivedAt}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-200 bg-[#0D1117] p-2.5 rounded-lg border border-slate-800 italic">
+                        "{selectedInvoice.lastClientReply.message}"
+                      </p>
+                      <div className="flex items-center gap-2 pt-1">
+                        <span className="text-[10px] text-slate-400">Status Tag:</span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/25">
+                          {selectedInvoice.lastClientReply.intent}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="font-semibold text-white text-sm">
                     Invoice Status & Lock
                   </div>
@@ -1560,15 +1759,41 @@ export default function CRMDashboard() {
                   {isGeneratingDraft && (
                     <div className="p-3 bg-indigo-950/40 border border-indigo-500/30 rounded-lg text-xs text-indigo-300 flex items-center gap-2">
                       <Sparkles className="w-4 h-4 animate-spin text-indigo-400" />
-                      <span>Generating smart draft using Gemini 3.8 Flash...</span>
+                      <span>Generating adaptive reply draft using Gemini AI...</span>
                     </div>
                   )}
 
-                  <div className="p-3 bg-[#0D1117] border border-slate-800 rounded-lg text-xs text-slate-300">
-                    <b>Why this message:</b> Invoice is overdue by{" "}
-                    {selectedInvoice.daysOverdue} days. Next follow-up is Reminder{" "}
-                    {getNextReminderNumber(selectedInvoice)}.
-                  </div>
+                  {/* Context: Client's Last Communication/Reply */}
+                  {selectedInvoice.lastClientReply ? (
+                    <div className="p-3.5 bg-slate-900/90 border border-indigo-500/30 rounded-xl space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 text-xs font-semibold text-indigo-300">
+                          <Mail className="w-3.5 h-3.5 text-indigo-400" />
+                          <span>Client's Last Response</span>
+                        </div>
+                        <span className="text-[10px] font-mono text-slate-400">
+                          {selectedInvoice.lastClientReply.receivedAt}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-200 bg-[#161B22] p-2.5 rounded-lg border border-slate-800 italic">
+                        "{selectedInvoice.lastClientReply.message}"
+                      </p>
+                      <div className="flex items-center gap-2 pt-0.5">
+                        <span className="text-[10px] text-slate-400">Detected Intent:</span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-500/15 text-indigo-300 border border-indigo-500/25">
+                          {selectedInvoice.lastClientReply.intent}
+                        </span>
+                        <span className="text-[10px] text-amber-400/90 ml-auto">
+                          ⚡ AI draft is tuned directly to this reply
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-3 bg-[#0D1117] border border-slate-800 rounded-lg text-xs text-slate-400 flex items-center justify-between">
+                      <span>No prior email reply received from client yet.</span>
+                      <span className="text-[10px] text-slate-500">Standard overdue progression</span>
+                    </div>
+                  )}
 
                   <div className="space-y-1">
                     <label className="text-xs text-slate-400">Subject</label>
@@ -1903,32 +2128,43 @@ export default function CRMDashboard() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-slate-300">Company Name</label>
+              <div className="space-y-1">
+                <label className="text-slate-300">Phone Number (with Country Code)</label>
+                <div className="flex gap-2">
+                  <select
+                    value={selectedCountryCode}
+                    onChange={(e) => setSelectedCountryCode(e.target.value)}
+                    className="bg-[#0D1117] border border-slate-800 rounded-lg p-2 text-white text-xs focus:outline-none focus:border-indigo-500 shrink-0 cursor-pointer"
+                  >
+                    {COUNTRY_CODES.map((c) => (
+                      <option key={c.code} value={c.code} className="bg-[#161B22]">
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
                   <input
-                    type="text"
-                    placeholder="e.g. Apex Marketing"
-                    value={clientFormData.company}
+                    type="tel"
+                    placeholder="98765 43210"
+                    value={clientFormData.phoneNumber}
                     onChange={(e) =>
-                      setClientFormData({ ...clientFormData, company: e.target.value })
+                      setClientFormData({ ...clientFormData, phoneNumber: e.target.value })
                     }
-                    className="w-full bg-[#0D1117] border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-indigo-500"
+                    className="flex-1 bg-[#0D1117] border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-indigo-500 font-mono"
                   />
                 </div>
+              </div>
 
-                <div className="space-y-1">
-                  <label className="text-slate-300">Phone</label>
-                  <input
-                    type="text"
-                    placeholder="+1 (555) 000-0000"
-                    value={clientFormData.phone}
-                    onChange={(e) =>
-                      setClientFormData({ ...clientFormData, phone: e.target.value })
-                    }
-                    className="w-full bg-[#0D1117] border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-indigo-500"
-                  />
-                </div>
+              <div className="space-y-1">
+                <label className="text-slate-300">Company Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Apex Marketing Ltd"
+                  value={clientFormData.company}
+                  onChange={(e) =>
+                    setClientFormData({ ...clientFormData, company: e.target.value })
+                  }
+                  className="w-full bg-[#0D1117] border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-indigo-500"
+                />
               </div>
 
               <div className="space-y-1">
@@ -2014,6 +2250,34 @@ export default function CRMDashboard() {
           <Sparkles className="w-4 h-4 text-indigo-400 shrink-0" />
           <span>{toastMsg}</span>
         </div>
+      )}
+
+      {/* Settings Modal */}
+      {isSettingsOpen && (
+        <SettingsModal
+          initialProfile={userProfile}
+          onClose={() => setIsSettingsOpen(false)}
+          onSave={(updated: { name: string; email: string; company: string }) => {
+            setUserProfile(updated);
+            setToastMsg("Settings successfully saved!");
+            setTimeout(() => setToastMsg(null), 3500);
+          }}
+        />
+      )}
+
+      {/* Auth Modal (Sign In / Sign Up) */}
+      {authModal && (
+        <AuthModal
+          initialMode={authModal === "signup" ? "signup" : "login"}
+          onCancel={() => setAuthModal(null)}
+          onSuccess={(profile: { name: string; email: string; company: string }) => {
+            setUserProfile(profile);
+            setPageMode("app");
+            setAuthModal(null);
+            setToastMsg(`Welcome, ${profile.name}!`);
+            setTimeout(() => setToastMsg(null), 3500);
+          }}
+        />
       )}
     </div>
   );

@@ -33,8 +33,6 @@ export default function SettingsModal({
   const [name, setName] = useState(initialProfile.name);
   const [email, setEmail] = useState(initialProfile.email);
   const [company, setCompany] = useState(initialProfile.company);
-  const [cooldownDays, setCooldownDays] = useState(5);
-  const [maxReminders, setMaxReminders] = useState(3);
   const [saved, setSaved] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -113,39 +111,39 @@ export default function SettingsModal({
 
           {/* Section: Escalation Safeguards */}
           <div className="space-y-3 bg-[#0D1117] p-4 rounded-xl border border-slate-800">
-            <div className="font-semibold text-slate-200 text-xs flex items-center gap-1.5">
-              <Shield className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Escalation Safeguards & Cooldowns</span>
+            <div className="font-semibold text-slate-200 text-xs flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <Shield className="w-3.5 h-3.5 text-indigo-400" />
+                <span>Follow-up Policy & Escalation</span>
+              </div>
+              <span className="text-[10px] text-indigo-400 font-mono font-bold bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
+                AI Reply-Driven
+              </span>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <label className="text-slate-400">Cooldown Between Reminders</label>
-                <select
-                  value={cooldownDays}
-                  onChange={(e) => setCooldownDays(Number(e.target.value))}
-                  className="w-full bg-[#161B22] border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-indigo-500"
-                >
-                  <option value={3}>3 Days Minimum</option>
-                  <option value={5}>5 Days (Recommended)</option>
-                  <option value={7}>7 Days Weekly</option>
-                </select>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-slate-400">Maximum Reminders Limit</label>
-                <div className="p-2 bg-[#161B22] border border-slate-800 rounded-lg text-slate-300 font-mono flex items-center justify-between">
-                  <span>3 Reminders Max</span>
-                  <span className="text-[10px] text-emerald-400 font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
-                    Rule 4 Enforced
-                  </span>
+            <div className="space-y-2 text-xs">
+              <div className="p-2.5 bg-[#161B22] border border-slate-800 rounded-lg flex items-center justify-between">
+                <div>
+                  <div className="text-white font-medium">Sequential 3-Stage Pipeline</div>
+                  <div className="text-[11px] text-slate-400 mt-0.5">
+                    R1 (Friendly) → R2 (Firm Follow-up) → R3 (Final Notice)
+                  </div>
                 </div>
+                <span className="text-[10px] text-slate-300 font-bold bg-slate-800 px-2 py-1 rounded border border-slate-700">
+                  Max 3 Reminders
+                </span>
+              </div>
+
+              <div className="p-2.5 bg-[#161B22] border border-slate-800 rounded-lg space-y-1">
+                <div className="text-white font-medium flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Client-Reply Adaptive Logic</span>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  Reminders are not sent on a blind timer. When a client replies (e.g. promise to pay, bank delay note, or query), Gemini AI parses their response and prepares the next stage draft accordingly for your review.
+                </p>
               </div>
             </div>
-
-            <p className="text-[10px] text-slate-500">
-              Guarantees your clients are never spammed. Reminders permanently stop after Level 3.
-            </p>
           </div>
 
           {/* Footer Actions */}
@@ -179,3 +177,4 @@ export default function SettingsModal({
     </div>
   );
 }
+
