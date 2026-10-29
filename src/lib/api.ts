@@ -1,10 +1,16 @@
 // Frontend API Client to communicate with FastAPI Backend (which syncs directly with Supabase)
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL ||
-  (typeof window !== "undefined" && window.location.hostname.includes("vercel.app")
-    ? "https://hackathon-2-harsh-malviya-backend.onrender.com"
-    : "http://127.0.0.1:8000");
+function getApiBase(): string {
+  // Always use the production Render backend in production or when accessed via Vercel
+  if (typeof window !== "undefined") {
+    if (window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
+      return "https://hackathon-2-harsh-malviya-backend.onrender.com";
+    }
+  }
+  return process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+}
+
+const API_BASE = getApiBase();
 
 export interface BackendInvoice {
   id: string;
