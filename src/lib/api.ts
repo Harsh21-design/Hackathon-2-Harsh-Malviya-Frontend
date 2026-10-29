@@ -92,11 +92,21 @@ export const api = {
     const res = await fetch(`${API_BASE}/api/v1/invoices/reminders/${draftId}/send`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ subject, body }),
+      body: JSON.stringify({ draft_id: draftId, subject, body }),
     });
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || "Failed to send reminder.");
+      let errMsg = "Failed to send reminder.";
+      try {
+        const err = await res.json();
+        if (typeof err.detail === "string") {
+          errMsg = err.detail;
+        } else if (Array.isArray(err.detail)) {
+          errMsg = err.detail.map((e: any) => e.msg || e.message).join(", ");
+        } else if (err.message) {
+          errMsg = err.message;
+        }
+      } catch (_) {}
+      throw new Error(errMsg);
     }
     return res.json();
   },
