@@ -133,8 +133,18 @@ export const api = {
       body: JSON.stringify(data),
     });
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || "Failed to create invoice.");
+      let errMsg = "Failed to create invoice.";
+      try {
+        const err = await res.json();
+        if (typeof err.detail === "string") {
+          errMsg = err.detail;
+        } else if (Array.isArray(err.detail)) {
+          errMsg = err.detail.map((e: any) => e.msg || e.message).join(", ");
+        } else if (err.message) {
+          errMsg = err.message;
+        }
+      } catch (_) {}
+      throw new Error(errMsg);
     }
     return res.json();
   },
@@ -153,8 +163,18 @@ export const api = {
       body: JSON.stringify(data),
     });
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || "Failed to create client.");
+      let errMsg = "Failed to create client.";
+      try {
+        const err = await res.json();
+        if (typeof err.detail === "string") {
+          errMsg = err.detail;
+        } else if (Array.isArray(err.detail)) {
+          errMsg = err.detail.map((e: any) => e.msg || e.message).join(", ");
+        } else if (err.message) {
+          errMsg = err.message;
+        }
+      } catch (_) {}
+      throw new Error(errMsg);
     }
     return res.json();
   },
