@@ -58,10 +58,9 @@ export default function LandingPage({
 
           {/* Navigation links */}
           <nav className="hidden md:flex items-center gap-6 text-xs text-slate-300">
-            <a href="#features" className="hover:text-white transition">Features</a>
             <a href="#how-it-works" className="hover:text-white transition">How it Works</a>
             <a href="#preview" className="hover:text-white transition">Escalation Demo</a>
-            <a href="#pricing" className="hover:text-white transition">For Freelancers</a>
+            <a href="#features" className="hover:text-white transition">Features</a>
           </nav>
 
           {/* Actions */}

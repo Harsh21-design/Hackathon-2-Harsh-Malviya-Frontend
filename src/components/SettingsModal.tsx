@@ -21,22 +21,32 @@ interface SettingsModalProps {
     email: string;
     company: string;
   };
+  currentTimezone: string;
+  onTimezoneChange: (tz: string) => void;
+  isDarkMode: boolean;
+  onToggleTheme: () => void;
   onSave: (updated: { name: string; email: string; company: string }) => void;
   onClose: () => void;
 }
 
 export default function SettingsModal({
   initialProfile,
+  currentTimezone,
+  onTimezoneChange,
+  isDarkMode,
+  onToggleTheme,
   onSave,
   onClose,
 }: SettingsModalProps) {
   const [name, setName] = useState(initialProfile.name);
   const [email, setEmail] = useState(initialProfile.email);
   const [company, setCompany] = useState(initialProfile.company);
+  const [timezone, setTimezone] = useState(currentTimezone);
   const [saved, setSaved] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    onTimezoneChange(timezone);
     onSave({ name, email, company });
     setSaved(true);
     setTimeout(() => {
@@ -106,6 +116,47 @@ export default function SettingsModal({
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full bg-[#161B22] border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-indigo-500"
               />
+            </div>
+          </div>
+
+          {/* Section: System Preferences (Timezone & Appearance) */}
+          <div className="space-y-3 bg-[#0D1117] p-4 rounded-xl border border-slate-800">
+            <div className="font-semibold text-slate-200 text-xs flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-indigo-400" />
+                <span>Timezone & Regional Preferences</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 items-center">
+              <div className="space-y-1">
+                <label className="text-slate-400">System Timezone</label>
+                <select
+                  value={timezone}
+                  onChange={(e) => setTimezone(e.target.value)}
+                  className="w-full bg-[#161B22] border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-indigo-500"
+                >
+                  <option value="Asia/Kolkata">IST - India Standard Time (UTC +5:30)</option>
+                  <option value="UTC">UTC - Coordinated Universal Time</option>
+                  <option value="America/New_York">EST - Eastern Time (US/New York)</option>
+                  <option value="America/Los_Angeles">PST - Pacific Time (US/LA)</option>
+                  <option value="Europe/London">GMT/BST - London (UK)</option>
+                  <option value="Asia/Dubai">GST - Dubai / UAE (UTC +4:00)</option>
+                  <option value="Asia/Singapore">SGT - Singapore (UTC +8:00)</option>
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-slate-400">Theme Appearance</label>
+                <button
+                  type="button"
+                  onClick={onToggleTheme}
+                  className="w-full bg-[#161B22] hover:bg-slate-800 border border-slate-800 rounded-lg p-2 text-white text-left flex items-center justify-between transition"
+                >
+                  <span>{isDarkMode ? "🌙 Dark Mode" : "☀️ Light Mode"}</span>
+                  <span className="text-[10px] text-indigo-400 font-bold">Toggle</span>
+                </button>
+              </div>
             </div>
           </div>
 

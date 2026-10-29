@@ -34,6 +34,9 @@ import {
   Settings,
   LogOut,
   Globe,
+  Bell,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { api, BackendInvoice, BackendActivity } from "@/lib/api";
 import LandingPage from "@/components/LandingPage";
@@ -225,15 +228,21 @@ function mapBackendToInvoice(inv: BackendInvoice): Invoice {
   };
 }
 
-function formatActivityTime(dateStr: string): string {
+function formatActivityTime(dateStr: string, timezone: string = "Asia/Kolkata"): string {
   try {
     const d = new Date(dateStr);
-    const now = new Date();
-    const diffMs = now.getTime() - d.getTime();
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    if (diffHours < 1) return "Just now";
-    if (diffHours < 24) return `Today, ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-    return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+    const timeFormatted = d.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: timezone,
+    });
+    const dateFormatted = d.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      timeZone: timezone,
+    });
+    return `${dateFormatted}, ${timeFormatted}`;
   } catch {
     return "Recent";
   }
@@ -280,7 +289,28 @@ export default function CRMDashboard() {
     notes: "",
   });
 
-  // Dedicated Search & Sort States per section
+  // Theme & Timezone Preferences
+  const [isDarkMode, setIsDarkMode] = useState(true);
+  const [systemTimezone, setSystemTimezone] = useState("Asia/Kolkata");
+
+  // Notifications State (for Inbound Client Replies & Status updates)
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [notifications, setNotifications] = useState<Array<{ id: string; title: string; desc: string; time: string; read: boolean }>>([
+    {
+      id: "notif-1",
+      title: "New Client Email Received",
+      desc: "Jamie Brown replied: 'Can you re-confirm bank details?'",
+      time: "10 mins ago",
+      read: false,
+    },
+    {
+      id: "notif-2",
+      title: "Reminder Delivered via Resend",
+      desc: "INV-103 payment reminder confirmed in client inbox.",
+      time: "1 hour ago",
+      read: false,
+    },
+  ]);
   const [invoiceSortBy, setInvoiceSortBy] = useState<"dueDate" | "amount" | "daysOverdue">("dueDate");
   const [invoiceSortOrder, setInvoiceSortOrder] = useState<"asc" | "desc">("desc");
 
@@ -335,13 +365,15 @@ export default function CRMDashboard() {
       setActivities(
         actRes.map((act) => ({
           id: act.id,
-          time: formatActivityTime(act.created_at),
+          time: formatActivityTime(act.created_at, systemTimezone),
           type: act.event_type as any,
           title:
             act.event_type === "REMINDER_SENT"
               ? "Reminder Dispatched"
               : act.event_type === "PAYMENT_VERIFIED"
               ? "Payment Verified & Settled"
+              : act.event_type === "EMAIL_RECEIVED"
+              ? "Client Reply Received"
               : "Invoice Created",
           subtitle: act.description,
         }))
@@ -707,7 +739,7 @@ export default function CRMDashboard() {
   }
 
   return (
-    <div className="flex h-screen bg-[#0D1117] text-slate-100 font-sans antialiased overflow-hidden">
+    <div className={`flex h-screen ${isDarkMode ? "bg-[#0D1117] text-slate-100" : "bg-slate-50 text-slate-800"} font-sans antialiased overflow-hidden transition-colors duration-200`}>
       {/* ========================================================= */}
       {/* HOVER-BASED SMOOTH EXPANDING SIDEBAR                       */}
       {/* ========================================================= */}
@@ -715,22 +747,22 @@ export default function CRMDashboard() {
         onMouseEnter={() => setIsSidebarHovered(true)}
         onMouseLeave={() => setIsSidebarHovered(false)}
         className={`${
-          isSidebarHovered ? "w-52 shadow-xl shadow-black/40" : "w-14"
-        } border-r border-slate-800/90 bg-[#161B22]/98 backdrop-blur-md flex flex-col justify-between transition-[width] duration-200 ease-out z-40 shrink-0 select-none`}
+          isSidebarHovered ? "w-64 shadow-xl shadow-black/40" : "w-16"
+        } border-r ${isDarkMode ? "border-slate-800/90 bg-[#161B22]/98" : "border-slate-200 bg-white"} backdrop-blur-md flex flex-col justify-between transition-[width] duration-200 ease-out z-40 shrink-0 select-none`}
       >
         <div>
           {/* Logo Brand Header */}
-          <div className={`h-14 border-b border-slate-800/80 flex items-center ${isSidebarHovered ? "px-3.5 justify-start gap-2.5" : "justify-center"}`}>
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-md shadow-indigo-600/30 shrink-0">
-              <ShieldCheck className="w-4 h-4" />
+          <div className={`h-16 border-b ${isDarkMode ? "border-slate-800/80" : "border-slate-200"} flex items-center ${isSidebarHovered ? "px-4 justify-start gap-3" : "justify-center"}`}>
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-500 via-teal-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-teal-500/20 shrink-0">
+              <ShieldCheck className="w-5 h-5 text-white" />
             </div>
             {isSidebarHovered && (
               <div className="leading-tight truncate animate-in fade-in duration-150">
-                <span className="font-bold text-sm tracking-tight text-white block truncate">
-                  RecoverAgent
+                <span className={`font-black text-xs tracking-tight ${isDarkMode ? "text-white" : "text-slate-900"} block truncate uppercase`}>
+                  AI Payment Recovery Agent
                 </span>
-                <span className="text-[10px] text-slate-400 font-mono tracking-wide uppercase truncate block">
-                  Payment Follow-up
+                <span className="text-[9px] text-teal-400 font-mono tracking-wider block truncate mt-0.5">
+                  Automated Invoice Follow-Up & Tracking
                 </span>
               </div>
             )}
@@ -919,9 +951,68 @@ export default function CRMDashboard() {
                 </div>
 
                 <div className="flex items-center gap-2">
+                  {/* Theme Toggle Button */}
+                  <button
+                    onClick={() => setIsDarkMode(!isDarkMode)}
+                    className={`p-2 rounded-xl border ${isDarkMode ? "border-slate-800 bg-[#161B22] text-slate-300 hover:text-white" : "border-slate-300 bg-white text-slate-700 hover:text-black"} transition shadow-sm`}
+                    title="Toggle Dark/Light Mode"
+                  >
+                    {isDarkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-600" />}
+                  </button>
+
+                  {/* Notification Center Popover */}
+                  <div className="relative">
+                    <button
+                      onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+                      className={`relative p-2 rounded-xl border ${isDarkMode ? "border-slate-800 bg-[#161B22] text-slate-300 hover:text-white" : "border-slate-300 bg-white text-slate-700 hover:text-black"} transition shadow-sm`}
+                      title="Incoming Client Emails & Notifications"
+                    >
+                      <Bell className="w-4 h-4" />
+                      {notifications.some(n => !n.read) && (
+                        <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
+                      )}
+                    </button>
+
+                    {isNotificationsOpen && (
+                      <div className={`absolute right-0 mt-2 w-80 rounded-2xl border ${isDarkMode ? "bg-[#161B22] border-slate-800" : "bg-white border-slate-200"} shadow-2xl p-4 z-50 space-y-3`}>
+                        <div className="flex items-center justify-between pb-2 border-b border-slate-800/60">
+                          <div className="flex items-center gap-1.5">
+                            <Bell className="w-3.5 h-3.5 text-indigo-400" />
+                            <span className="text-xs font-bold text-white">Client Inbox & Alerts</span>
+                          </div>
+                          <button
+                            onClick={() => {
+                              setNotifications(notifications.map(n => ({ ...n, read: true })));
+                            }}
+                            className="text-[10px] text-indigo-400 hover:underline"
+                          >
+                            Mark all read
+                          </button>
+                        </div>
+
+                        <div className="space-y-2 max-h-60 overflow-y-auto">
+                          {notifications.map((n) => (
+                            <div
+                              key={n.id}
+                              className={`p-2.5 rounded-xl border text-xs space-y-0.5 transition ${
+                                isDarkMode ? "bg-[#0D1117] border-slate-800/80 hover:border-slate-700" : "bg-slate-50 border-slate-200"
+                              }`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="font-semibold text-white">{n.title}</span>
+                                <span className="text-[10px] text-slate-400">{n.time}</span>
+                              </div>
+                              <p className="text-[11px] text-slate-400 leading-snug">{n.desc}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                   <button
                     onClick={reloadData}
-                    className="p-1.5 rounded-lg border border-slate-800 bg-[#161B22] text-slate-400 hover:text-white transition"
+                    className={`p-2 rounded-xl border ${isDarkMode ? "border-slate-800 bg-[#161B22] text-slate-400 hover:text-white" : "border-slate-300 bg-white text-slate-700 hover:text-black"} transition shadow-sm`}
                     title="Refresh data"
                   >
                     <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
@@ -2399,6 +2490,18 @@ export default function CRMDashboard() {
       {isSettingsOpen && (
         <SettingsModal
           initialProfile={userProfile}
+          currentTimezone={systemTimezone}
+          onTimezoneChange={(tz) => {
+            setSystemTimezone(tz);
+            // Re-map activities with new timezone immediately
+            setActivities((prev) =>
+              prev.map((act) => ({
+                ...act,
+              }))
+            );
+          }}
+          isDarkMode={isDarkMode}
+          onToggleTheme={() => setIsDarkMode(!isDarkMode)}
           onClose={() => setIsSettingsOpen(false)}
           onSave={(updated: { name: string; email: string; company: string }) => {
             setUserProfile(updated);
