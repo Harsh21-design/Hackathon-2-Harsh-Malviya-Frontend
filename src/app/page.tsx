@@ -276,7 +276,7 @@ export default function CRMDashboard() {
   // Authenticated User Workspace Profile
   const [userProfile, setUserProfile] = useState<{ name: string; email: string; company: string }>({
     name: "Harsh Malviya",
-    email: "malviyahars210903@gmail.com",
+    email: "malviyaharsh210903@gmail.com",
     company: "Nexus Digital Studio",
   });
 
@@ -379,7 +379,26 @@ export default function CRMDashboard() {
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
   const showToast = (msg: any) => {
-    const text = typeof msg === "string" ? msg : (msg?.detail || msg?.message || JSON.stringify(msg));
+    let text = "Notification";
+    if (typeof msg === "string") {
+      text = msg === "[object Object]" ? "An unexpected error occurred." : msg;
+    } else if (msg?.message && typeof msg.message === "string") {
+      text = msg.message === "[object Object]" ? "An unexpected error occurred." : msg.message;
+    } else if (msg?.detail) {
+      if (typeof msg.detail === "string") {
+        text = msg.detail;
+      } else if (Array.isArray(msg.detail)) {
+        text = msg.detail.map((e: any) => e.msg || e.message || JSON.stringify(e)).join(", ");
+      } else {
+        text = JSON.stringify(msg.detail);
+      }
+    } else if (typeof msg === "object") {
+      try {
+        text = JSON.stringify(msg);
+      } catch {
+        text = "An error occurred.";
+      }
+    }
     setToastMsg(text);
     setTimeout(() => setToastMsg(null), 3800);
   };

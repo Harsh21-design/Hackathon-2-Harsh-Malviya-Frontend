@@ -188,5 +188,69 @@ export const api = {
     }
     return res.json();
   },
+
+  // Authentication: Database-backed login and signup
+  login: async (data: { email: string; password: string }): Promise<{
+    id: string;
+    name: string;
+    email: string;
+    company: string;
+    address?: string | null;
+  }> => {
+    const res = await fetch(`${API_BASE}/api/v1/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      let errMsg = "Invalid email or password.";
+      try {
+        const err = await res.json();
+        if (typeof err.detail === "string") {
+          errMsg = err.detail;
+        } else if (Array.isArray(err.detail)) {
+          errMsg = err.detail.map((e: any) => e.msg || e.message).join(", ");
+        } else if (err.message) {
+          errMsg = err.message;
+        }
+      } catch (_) {}
+      throw new Error(errMsg);
+    }
+    return res.json();
+  },
+
+  signup: async (data: {
+    name: string;
+    email: string;
+    password: string;
+    company?: string;
+  }): Promise<{
+    id: string;
+    name: string;
+    email: string;
+    company: string;
+    address?: string | null;
+  }> => {
+    const res = await fetch(`${API_BASE}/api/v1/auth/signup`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      let errMsg = "Failed to create account.";
+      try {
+        const err = await res.json();
+        if (typeof err.detail === "string") {
+          errMsg = err.detail;
+        } else if (Array.isArray(err.detail)) {
+          errMsg = err.detail.map((e: any) => e.msg || e.message).join(", ");
+        } else if (err.message) {
+          errMsg = err.message;
+        }
+      } catch (_) {}
+      throw new Error(errMsg);
+    }
+    return res.json();
+  },
 };
 

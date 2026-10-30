@@ -13,6 +13,7 @@ import {
   X,
   CheckCircle2
 } from "lucide-react";
+import { api } from "@/lib/api";
 
 interface AuthModalProps {
   initialMode?: "login" | "signup";
@@ -33,46 +34,59 @@ export default function AuthModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    if (!email || !password) {
+    const cleanEmail = email.trim();
+    const cleanPassword = password.trim();
+
+    if (!cleanEmail || !cleanPassword) {
       setError("Please fill in both email and password.");
       return;
     }
 
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters.");
+    if (cleanPassword.length < 8) {
+      setError("Password must be at least 8 characters.");
+      return;
+    }
+
+    if (mode === "signup" && !name.trim()) {
+      setError("Please provide your full name.");
       return;
     }
 
     setLoading(true);
 
-    // Verify credentials or register account
-    setTimeout(() => {
-      setLoading(false);
-      // If logging in with the predefined primary account
-      if (email.toLowerCase() === "malviyahars210903@gmail.com") {
-        if (password !== "harsh1234") {
-          setError("Invalid password. Please enter the correct password.");
-          return;
-        }
-        onSuccess({
-          name: "Harsh Malviya",
-          email: "malviyahars210903@gmail.com",
-          company: "Nexus Digital Studio",
+    try {
+      if (mode === "login") {
+        const user = await api.login({
+          email: cleanEmail,
+          password: cleanPassword,
         });
-        return;
+        onSuccess({
+          name: user.name,
+          email: user.email,
+          company: user.company || "Nexus Digital Studio",
+        });
+      } else {
+        const user = await api.signup({
+          name: name.trim(),
+          email: cleanEmail,
+          password: cleanPassword,
+          company: company.trim() || undefined,
+        });
+        onSuccess({
+          name: user.name,
+          email: user.email,
+          company: user.company || "Independent Studio",
+        });
       }
-
-      // For any new freelancer account creation
-      onSuccess({
-        name: name || (email.split("@")[0].toUpperCase()),
-        email: email,
-        company: company || "Independent Studio",
-      });
-    }, 500);
+    } catch (err: any) {
+      setError(err?.message || "Invalid email or password. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -192,12 +206,16 @@ export default function AuthModal({
           </div>
 
           <div className="space-y-1">
-            <label className="text-slate-300 font-medium">Password</label>
+            <div className="flex justify-between items-center">
+              <label className="text-slate-300 font-medium">Password</label>
+              <span className="text-[10px] text-slate-500">Min. 8 characters</span>
+            </div>
             <div className="relative">
               <Lock className="w-4 h-4 absolute left-3 top-2.5 text-slate-500" />
               <input
                 type="password"
                 required
+                minLength={8}
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
